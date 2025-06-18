@@ -1,9 +1,8 @@
-﻿using MobileBanking.Application.Contracts.Request.ISmart;
-using MobileBanking.Application.Contracts.Response.ISmart;
+﻿using MobileBanking.Application.Models;
 
 namespace MobileBanking.Application.Services;
 public interface IStatementServices
 {
-    Task<FullStatementResponse> FullStatement(FullStatementRequest req);
-    Task<MiniStatementResponse> MiniStatement(MiniStatementRequest req);
+    Task<FullStatementModel> FullStatement(FullStatmentInquiryModel req);
+    Task<MiniStatementModel> MiniStatement(MiniStatementInquiryModel req);
 }

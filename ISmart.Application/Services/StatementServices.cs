@@ -1,5 +1,5 @@
-﻿using MobileBanking.Application.Contracts.Request.ISmart;
-using MobileBanking.Application.Contracts.Response.ISmart;
+﻿using MobileBanking.Application.Mappings;
+using MobileBanking.Application.Models;
 using MobileBanking.Data.Repositories;
 
 namespace MobileBanking.Application.Services;
@@ -16,60 +16,33 @@ public class StatementServices : IStatementServices
         _balanceInquiry = balanceInquiry;
     }
 
-    public async Task<MiniStatementResponse> MiniStatement(MiniStatementRequest req)
+    public async Task<MiniStatementModel> MiniStatement(MiniStatementInquiryModel req)
     {
         await _accountValidation.IsSingleAccount(req.accountNumber);
         var balance = await _balanceInquiry.GetAccountDetails(req.accountNumber);
         var accountbal = balance.First();
         var statements = await _statement.MiniStatement(req.accountNumber, req.count);
-        List<MiniStatement> miniStatements = new();
-        foreach (var statement in statements)
-        {
-            miniStatements.Add(new MiniStatement
-            {
-                date = statement.Date.Date.ToString(),
-                remarks = statement.Description,
-                amount = statement.Amount,
-                type = statement.Type
-            });
-        }
-        return new MiniStatementResponse
+        List<MiniStatement> miniStatements =
+            DataToBusinessMapping.ToMiniStatmentList(statements);
+        return new MiniStatementModel
         {
             minimumBalance = accountbal.MinBal,
             availableBalance = accountbal.Balance,
-            isoResponseCode = "00",
             statementList = miniStatements
         };
     }
 
-    public async Task<FullStatementResponse> FullStatement(FullStatementRequest req)
+    public async Task<FullStatementModel> FullStatement(FullStatmentInquiryModel req)
     {
         await _accountValidation.IsSingleAccount(req.accountNumber);
         var balance = await _balanceInquiry.GetAccountDetails(req.accountNumber);
         var accountBal = balance.First();
         var statements = await _statement.FullStatement(req.accountNumber, req.fromDate, req.toDate);
-        List<FullStatement> fullStatements = new();
-        decimal depBal = 0;
-        foreach (var statement in statements)
-        {
-            if (statement.Type == "Credit")
-                depBal += statement.Amount;
-            else
-                depBal -= statement.Amount;
-            fullStatements.Add(new FullStatement
-            {
-                date = statement.Date.Date.ToString(),
-                remarks = statement.Description,
-                amount = statement.Amount,
-                type = statement.Type,
-                Balance = depBal
-            });
-        }
-        return new FullStatementResponse
+        List<Statement> fullStatements = DataToBusinessMapping.ToStatementList(statements);
+        return new FullStatementModel
         {
             minimumBalance = accountBal.MinBal,
             availableBalance = accountBal.Balance,
-            isoResponseCode = "00",
             statementList = fullStatements
         };
 

@@ -20,8 +20,8 @@ public class BaseSqlConnection : IBaseSqlConnection
     public string GetConnectionString()
     {
         var connectionString = new SqlConnectionStringBuilder(Configuration.GetConnectionString("DbConnection"));
-        connectionString.Password = "GoldenSky62";
-        connectionString.UserID = "OmsGold";
+        connectionString.Password = Configuration["DbCredentials.password"];
+        connectionString.UserID = Configuration["DbCredentials.userName"];
 
         return BuildConnectionString(connectionString.ToString(), GetTenantInfo(connectionString.ToString())).ToString();
     }

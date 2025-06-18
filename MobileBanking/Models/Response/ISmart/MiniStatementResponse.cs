@@ -1,12 +1,12 @@
-﻿namespace MobileBanking.Application.Contracts.Response.ISmart;
+﻿namespace MobileBanking.Models.Response.ISmart;
 public class MiniStatementResponse : BaseResponse
 {
     public decimal minimumBalance { get; init; } = 0;
     public decimal availableBalance { get; init; } = 0;
-    public List<MiniStatement>? statementList { get; init; }
+    public List<MiniStatementList>? statementList { get; init; }
 
 }
-public class MiniStatement
+public class MiniStatementList
 {
     public required string date { get; init; }
     public required string remarks { get; init; }

@@ -5,7 +5,7 @@ namespace MobileBanking.Data.Repositories;
 public class AccountRepository : IAccountRepository
 {
     private readonly ISqlDataAccess _sqlDataAccess;
-    string[] credit = { "010", "020", "030", "040", "050", "060", "070", "160", "180", "210", "230", "250" };
+
     public AccountRepository(ISqlDataAccess sqlDataAccess)
     {
         _sqlDataAccess = sqlDataAccess;
@@ -32,4 +32,7 @@ public class AccountRepository : IAccountRepository
                 accountNo,
                 date
             });
+    public async Task<string> GetAccountBranch(string accountNO) =>
+        await _sqlDataAccess.SingleDataQuery<string, dynamic>
+        ("select top 1 branchId from Itms1 where REPLACE(acno,'.','')+Itemcode =@accountNO", new { accountNO });
 }

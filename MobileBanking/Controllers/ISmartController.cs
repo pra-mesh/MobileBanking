@@ -1,7 +1,9 @@
 ﻿using Microsoft.AspNetCore.Mvc;
-using MobileBanking.Application.Contracts.Request.ISmart;
-using MobileBanking.Application.Contracts.Response.ISmart;
 using MobileBanking.Application.Services;
+using MobileBanking.Mappings.APIToBusinessMappings;
+using MobileBanking.Mappings.BusinessToAPIMapping;
+using MobileBanking.Models.Request.ISmart;
+using MobileBanking.Models.Response.ISmart;
 
 namespace MobileBanking.Controllers;
 [Route("v1/api/transaction")]
@@ -17,12 +19,25 @@ public class ISmartController : ControllerBase
         _statementServices = statementServices;
     }
     [HttpPost("BalanceInquiry")]
-    public async Task<BalanceInquiryResponse> Inquiry(BalanceInquiryRequest req) =>
-    await _balanceInquiry.GetBalance(req);
+    public async Task<BalanceInquiryResponse> Inquiry(BalanceInquiryRequest req)
+    {
+        var balanceRequest = ISMartRequestMapping.ToBalanceInquiryRequest(req);
+        var balanceResult = await _balanceInquiry.GetBalance(balanceRequest);
+        return ISmartResponseMapping.ToBalanceInquiryResponse(balanceResult);
+    }
+
     [HttpPost("fullstatement")]
-    public async Task<FullStatementResponse> FullStatement(FullStatementRequest req) =>
-        await _statementServices.FullStatement(req);
+    public async Task<FullStatementResponse> FullStatement(FullStatementRequest req)
+    {
+        var statementRequest = ISMartRequestMapping.ToFullStatmentInquiryModel(req);
+        var result = await _statementServices.FullStatement(statementRequest);
+        return ISmartResponseMapping.ToFullStatementResponse(result);
+    }
     [HttpPost("ministatement")]
-    public async Task<MiniStatementResponse> MiniStatement(MiniStatementRequest req) =>
-        await _statementServices.MiniStatement(req);
+    public async Task<MiniStatementResponse> MiniStatement(MiniStatementRequest req)
+    {
+        var miniStatementRequedt = ISMartRequestMapping.ToMiniStatementInquiryModel(req);
+        var result = await _statementServices.MiniStatement(miniStatementRequedt);
+        return ISmartResponseMapping.ToMiniStatementResponse(result);
+    }
 }

@@ -1,5 +1,5 @@
-﻿using MobileBanking.Application.Contracts.Request.ISmart;
-using MobileBanking.Application.Contracts.Response.ISmart;
+﻿using MobileBanking.Application.Mappings;
+using MobileBanking.Application.Models;
 using MobileBanking.Data.Repositories;
 
 namespace MobileBanking.Application.Services;
@@ -13,18 +13,15 @@ public class BalanceInquiry : IBalanceInquiry
         _account = account;
         _valid = valid;
     }
-    public async Task<BalanceInquiryResponse> GetBalance(BalanceInquiryRequest reqBalance)
+    public async Task<AccountDetailModel> GetBalance(BalanceInquiryModel reqBalance)
     {
         await _valid.IsSingleAccount(reqBalance.accountNumber);
         var accounts = await _account.GetAccountDetails(reqBalance.accountNumber);
 
         var account = accounts.First();
-        return new BalanceInquiryResponse
-        {
-            isoResponseCode = "00",
-            availableBalance = account.Balance,
-            minimumBalance = account.MinBal
-        };
+        return DataToBusinessMapping.ToAccountDetailModel(account);
+
+
 
     }
 }

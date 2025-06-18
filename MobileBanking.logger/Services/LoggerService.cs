@@ -12,7 +12,7 @@ public class LoggerService : ILoggerService
     }
     void ILoggerService.LogInformation(string message) => _logger.LogInformation(message);
 
-    void ILoggerService.LogWarning(string message) => _logger.LogInformation(message);
+    void ILoggerService.LogWarning(string message) => _logger.LogWarning(message);
 
-    void ILoggerService.LogError(string message, Exception ex) => _logger.LogInformation(message);
+    void ILoggerService.LogError(string message, Exception ex) => _logger.LogError(message);
 }

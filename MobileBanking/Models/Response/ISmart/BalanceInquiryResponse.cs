@@ -1,4 +1,4 @@
-﻿namespace MobileBanking.Application.Contracts.Response.ISmart;
+﻿namespace MobileBanking.Models.Response.ISmart;
 public class BalanceInquiryResponse : BaseResponse
 {
     public decimal minimumBalance { get; init; } = 0;
