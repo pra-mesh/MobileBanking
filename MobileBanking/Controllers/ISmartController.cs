@@ -12,11 +12,16 @@ public class ISmartController : ControllerBase
 {
     private readonly IBalanceInquiry _balanceInquiry;
     private readonly IStatementServices _statementServices;
+    private readonly ITransactionService _transactionService;
 
-    public ISmartController(IBalanceInquiry balanceInquiry, IStatementServices statementServices)
+    public ISmartController(
+        IBalanceInquiry balanceInquiry,
+        IStatementServices statementServices,
+        ITransactionService transactionService)
     {
         _balanceInquiry = balanceInquiry;
         _statementServices = statementServices;
+        _transactionService = transactionService;
     }
     [HttpPost("BalanceInquiry")]
     public async Task<BalanceInquiryResponse> Inquiry(BalanceInquiryRequest req)
@@ -39,5 +44,12 @@ public class ISmartController : ControllerBase
         var miniStatementRequedt = ISMartRequestMapping.ToMiniStatementInquiryModel(req);
         var result = await _statementServices.MiniStatement(miniStatementRequedt);
         return ISmartResponseMapping.ToMiniStatementResponse(result);
+    }
+    [HttpPost()]
+    public async Task<FundTransferResponse> FundTransferResponse(FundTransferRequest req)
+    {
+        var fundTransfer = ISMartRequestMapping.ToFundTransferModel(req);
+        var result = await _transactionService.FundTransferAsync(fundTransfer);
+        return ISmartResponseMapping.ToFundTransferResponse(result);
     }
 }

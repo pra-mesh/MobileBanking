@@ -57,4 +57,11 @@ public static class ISmartResponseMapping
             }
         return miniStatements;
     }
+    public static FundTransferResponse ToFundTransferResponse(FundTransferedModel model) =>
+        new FundTransferResponse
+        {
+            transactionId = model.journalno.ToString(),
+            balance = model.balance,
+            isoResponseCode = "00"
+        };
 }

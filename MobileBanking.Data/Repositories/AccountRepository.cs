@@ -35,4 +35,9 @@ public class AccountRepository : IAccountRepository
     public async Task<string> GetAccountBranch(string accountNO) =>
         await _sqlDataAccess.SingleDataQuery<string, dynamic>
         ("select top 1 branchId from Itms1 where REPLACE(acno,'.','')+Itemcode =@accountNO", new { accountNO });
+
+    public async Task<string> GetItemName(string fullAccountNo) => await _sqlDataAccess.SingleDataQuery<string, dynamic>
+          ("select top 1 ITEMNAME from Itms1 where REPLACE(acno,'.','')" +
+          "+ITEMCODE =@fullaccount",
+          new { fullAccountNo });
 }

@@ -5,5 +5,6 @@ public interface ITransactionRepository
 {
     Task<int> GenerateJournalNoAsync(JournalNoDTO journal);
     Task<int> GetTransNoAsync(TransactionDTO transactionData);
-    void InsertTransaction(TransactionDataDTO transactionData);
+    Task InsertTransactionAsync(TransactionDataDTO transactionData);
+    Task SearchTransactionByJournalNo(string journalNO);
 }

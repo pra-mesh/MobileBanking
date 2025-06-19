@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Diagnostics;
-using MobileBanking.Application.Contracts.Response;
+
 using MobileBanking.Logger.Services;
+using MobileBanking.Models.Response;
 using MobileBanking.Shared.Utils;
 
 namespace MobileBanking.Exceptions;

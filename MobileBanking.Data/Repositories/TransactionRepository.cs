@@ -24,14 +24,14 @@ public class TransactionRepository : ITransactionRepository
     {
         return await _sqlDataAccess.SaveDataScalarTransaction<dynamic>(GetTransNos(), transactionData);
     }
-    public void InsertTransaction(TransactionDataDTO transactionData)
+    public async Task InsertTransactionAsync(TransactionDataDTO transactionData)
     {
         string query = @"insert into maintransbook ([Journalno],[BVRCNO],[transDate],[branchid],[mano],[acno],[itemcode],[itemname],[itemlocation]
             ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
             ,[EnteredBy],[EntryDate]) 
             values (@Journalno,@BVRCNO,@transDate,@branchid,@mano,@acno,@itemcode,@itemname,@itemlocation,@receivedpaidBy,@particulars,@dr_cr
             ,@Debit,@Credit,@description,@Remarks1,@Remarks2,@Remarks3,@Remarks4,@TransNoa,@EnteredBy,@EntryDate)";
-        _sqlDataAccess.SaveDataTransactionQuery<dynamic>(query, transactionData);
+        await _sqlDataAccess.SaveDataTransactionQuery<dynamic>(query, transactionData);
     }
 
     private static string GetTransNos()
@@ -42,5 +42,10 @@ public class TransactionRepository : ITransactionRepository
             @ReceiptNo,@EnteredBy,@EntryDate,@BranchID,@MemberNO,@MemberName,@PartyDocument);
             SELECT CAST(SCOPE_IDENTITY() as int)";
     }
+
+    public async Task SearchTransactionByJournalNo(string journalNO) =>
+        await _sqlDataAccess.SingleDataQuery<FundTransferStatusDTO, dynamic>
+        ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where journalno=@journalno",
+            new { journalNO });
 }
 

@@ -1,4 +1,6 @@
-﻿using MobileBanking.Application.Contracts.Response;
+﻿
+
+using MobileBanking.Models.Response;
 
 namespace MobileBanking.Middleware;
 

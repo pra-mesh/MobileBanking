@@ -11,10 +11,11 @@ public static class ApplicationServiceCollection
     public static IServiceCollection AddApplicationServices(this IServiceCollection services)
     {
         services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
-        services.AddScoped<ITenantProvider, TenantProvider>();
-        services.AddScoped<IBalanceInquiry, BalanceInquiry>();
         services.AddScoped<IAccountValidation, AccountValidation>();
+        services.AddScoped<IBalanceInquiry, BalanceInquiry>();
         services.AddScoped<IStatementServices, StatementServices>();
+        services.AddScoped<ITenantProvider, TenantProvider>();
+        services.AddScoped<ITransactionService, TransactionService>();
         services.AddDataServices();
         return services;
     }
