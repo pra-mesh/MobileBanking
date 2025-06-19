@@ -11,7 +11,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ISmart.Application\MobileBanking.Application.csproj" />
+    <ProjectReference Include="..\MobileBanking.Application\MobileBanking.Application.csproj" />
     <ProjectReference Include="..\MobileBanking.logger\MobileBanking.Logger.csproj" />
   </ItemGroup>
 

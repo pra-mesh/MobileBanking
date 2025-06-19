@@ -47,5 +47,11 @@ public class TransactionRepository : ITransactionRepository
         await _sqlDataAccess.SingleDataQuery<FundTransferStatusDTO, dynamic>
         ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where journalno=@journalno",
             new { journalNO });
+
+    public async Task SearchTransactionByBVRCNO(string BVRCNO) =>
+       await _sqlDataAccess.SingleDataQuery<FundTransferStatusDTO, dynamic>
+       ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where BVRCNO=@BVRCNO",
+           new { BVRCNO });
+
 }
 
