@@ -41,8 +41,8 @@ public class StatementServices : IStatementServices
         List<Statement> fullStatements = DataToBusinessMapping.ToStatementList(statements);
         return new FullStatementModel
         {
-            minimumBalance = accountBal.MinBal,
-            availableBalance = accountBal.Balance,
+            minimumBalance = 0,
+            availableBalance = 0,
             statementList = fullStatements
         };
 

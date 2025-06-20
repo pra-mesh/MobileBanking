@@ -21,7 +21,7 @@ public class AccountRepository : IAccountRepository
 
     public async Task<decimal> GetBalance(string accountNo) =>
         await _sqlDataAccess.SingleDataQuery<decimal, dynamic>
-        ("select Balance from ItemBal where REPLACE(acno,'.','')+ITEMCODE =@fullaccount", new { accountNo });
+        ("Select IsNUll((select Balance from ItemBal where REPLACE(acno,'.','')+ITEMCODE =@accountNo),0) as Balance", new { accountNo });
 
     public async Task<decimal> GetOpeningBalance(string accountNo, DateTime date) =>
         await _sqlDataAccess.SingleDataQuery<decimal, dynamic>
@@ -38,6 +38,6 @@ public class AccountRepository : IAccountRepository
 
     public async Task<string> GetItemName(string fullAccountNo) => await _sqlDataAccess.SingleDataQuery<string, dynamic>
           ("select top 1 ITEMNAME from Itms1 where REPLACE(acno,'.','')" +
-          "+ITEMCODE =@fullaccount",
+          "+ITEMCODE =@fullAccountNo",
           new { fullAccountNo });
 }

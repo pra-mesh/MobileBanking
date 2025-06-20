@@ -26,7 +26,15 @@ public class SqlDataAccess : ISqlDataAccess
             return data;
         }
     }
+    public async Task SaveData<T>(string storeProcedure, T parameters)
+    {
+        using (IDbConnection connection = new SqlConnection(_connectionString))
+        {
+            Console.WriteLine(parameters.ToString());
+            await connection.ExecuteAsync(storeProcedure, parameters, commandType: CommandType.StoredProcedure);
 
+        }
+    }
     public async Task<List<T>> LoadDataQuery<T, U>(string commandText, U parameters)
     {
         using (IDbConnection connection = new SqlConnection(_connectionString))
@@ -65,9 +73,9 @@ public class SqlDataAccess : ISqlDataAccess
     {
         await _dbConnection.ExecuteAsync(commandText, parameters, commandType: CommandType.Text, transaction: _transaction);
     }
-    public async Task SaveDataTransactionProcedure<T>(string stroreProceddure, T parameters)
+    public async Task SaveDataTransactionProcedure<T>(string stroreProcedure, T parameters)
     {
-        await _dbConnection.ExecuteAsync(stroreProceddure, parameters, commandType: CommandType.StoredProcedure, transaction: _transaction);
+        await _dbConnection.ExecuteAsync(stroreProcedure, parameters, commandType: CommandType.StoredProcedure, transaction: _transaction);
     }
     public async Task<int> SaveDataScalarTransaction<T>(string commandText, T parameters)
     {

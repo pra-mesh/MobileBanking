@@ -2,7 +2,8 @@
 using MobileBanking.Application.Models;
 using MobileBanking.Data.Repositories;
 using MobileBanking.Data.Services;
-
+using System.Diagnostics;
+//TODO: log on tblsilog
 namespace MobileBanking.Application.Services;
 public class TransactionService : ITransactionService
 {
@@ -19,27 +20,30 @@ public class TransactionService : ITransactionService
 
     public async Task<FundTransferedModel> FundTransferAsync(FundTransferModel req)
     {
-
+        //ISSUES: This task is taking too much time fix this
         await _accountValidation.HasSufficientBalance(req.srcAccount, true, req.amount);
         await _accountValidation.HasSufficientBalance(req.destAccount, false, req.amount);
         req.srcBranchId = await _accountValidation.GetBranch(req.srcAccount);
         req.destBranchId = await _accountValidation.GetBranch(req.destAccount);
         int journalno = 0;
+        int transno = 0;
         if (req.srcBranchId != req.destBranchId)
-            journalno = await InterbrachTransaction(req);
+            (journalno, transno) = await InterbrachTransaction(req);
         else
-            journalno = await BranchlessTransaction(req);
+            (journalno, transno) = await BranchlessTransaction(req);
         decimal currentBalance = await _accountValidation.GeBalance(req.srcAccount);
         return new FundTransferedModel
         {
-            journalno = journalno,
+            Journalno = journalno,
+            BVRCNO = req.transCode ?? "",
+            TransNoA = transno,
             balance = currentBalance,
             transactionBalance = req.amount,
             transactionIdentifier = req.transCode ?? ""
         };
     }
 
-    private async Task<int> BranchlessTransaction(FundTransferModel req)
+    private async Task<(int, int)> BranchlessTransaction(FundTransferModel req)
     {
         try
         {
@@ -56,7 +60,7 @@ public class TransactionService : ITransactionService
                BusinessToDataMapping.ToTransactionDataDTO
                (req, await _accountValidation.AccountStructure(req.destAccount), journalno, transno, false));
             _unitOfWork.Commit();
-            return journalno;
+            return (journalno, transno);
         }
         catch (Exception e)
         {
@@ -65,21 +69,24 @@ public class TransactionService : ITransactionService
         }
     }
 
-    private async Task<int> InterbrachTransaction(FundTransferModel req)
+    private async Task<(int, int)> InterbrachTransaction(FundTransferModel req)
     {
         try
         {
-            AccountIdentifier headoffice = await _accountValidation.AccountStructure("1202000");
-            AccountIdentifier sourceBranch = await _accountValidation.AccountStructure($"12020{req.srcBranchId}");
-            AccountIdentifier destBranch = await _accountValidation.AccountStructure($"12020{req.destBranchId}");
-            AccountIdentifier sourceAccount = await _accountValidation.AccountStructure(req.srcAccount);
-            AccountIdentifier destinationAccount = await _accountValidation.AccountStructure(req.destAccount);
-
+            //ISSUES: This task is taking too much time fix this
+            var stopwatch = Stopwatch.StartNew();
+            (AccountIdentifier headoffice,
+                AccountIdentifier sourceBranch,
+                AccountIdentifier destBranch,
+                AccountIdentifier sourceAccount,
+                AccountIdentifier destinationAccount) = await BranchAccountDetail(req);
             _unitOfWork.Begin();
+            Console.WriteLine("Call SomeMethod {0} ms", stopwatch.ElapsedMilliseconds);
             var mappedTransaction = BusinessToDataMapping.ToTransactionModel(req);
             int transno = await _transaction.GetTransNoAsync(mappedTransaction);
             if (transno == 0) throw new Exception("Couldn't generate tranaction no.");
             //Source
+
             int journalno = await _transaction.GenerateJournalNoAsync(BusinessToDataMapping.ToJournalNoDTO(req, true));
             if (journalno == 0) throw new Exception("Couldn't generate journalno.");
             int defaultJournalno = journalno;
@@ -100,6 +107,8 @@ public class TransactionService : ITransactionService
             (req, destinationAccount, journalno, transno, false));
 
             //headoffice
+            journalno = await _transaction.GenerateJournalNoAsync(BusinessToDataMapping.ToJournalNoDTO(req, true));
+            if (journalno == 0) throw new Exception("Couldn't generate journalno.");
             await _transaction.InsertTransactionAsync(
             BusinessToDataMapping.ToTransactionDataDTO
             (req, sourceBranch, journalno, transno, true));
@@ -109,12 +118,59 @@ public class TransactionService : ITransactionService
 
 
             _unitOfWork.Commit();
-            return defaultJournalno;
+            return (defaultJournalno, transno);
         }
         catch (Exception e)
         {
             _unitOfWork.RollBack();
             throw new Exception($"System Error [{e.Message}]");
         }
+    }
+
+    private async Task<(AccountIdentifier headoffice,
+        AccountIdentifier sourceBranch,
+        AccountIdentifier destBranch,
+        AccountIdentifier sourceAccount,
+        AccountIdentifier destinationAccount)> BranchAccountDetail(FundTransferModel req)
+    {
+        var headofficeTask = _accountValidation.AccountStructure("1202000");
+        var sourceBranchTask = _accountValidation.AccountStructure($"12020{req.srcBranchId}");
+        var destBranchTask = _accountValidation.AccountStructure($"12020{req.destBranchId}");
+        var sourceAccountTask = _accountValidation.AccountStructure(req.srcAccount);
+        var destinationAccountTask = _accountValidation.AccountStructure(req.destAccount);
+        await Task.WhenAll(headofficeTask, sourceAccountTask, sourceBranchTask, destBranchTask, destinationAccountTask);
+
+        AccountIdentifier headoffice = await headofficeTask;
+        AccountIdentifier sourceBranch = await sourceBranchTask;
+        AccountIdentifier destBranch = await destBranchTask;
+        AccountIdentifier sourceAccount = await sourceAccountTask;
+        AccountIdentifier destinationAccount = await destinationAccountTask;
+        return (headoffice, sourceBranch, destBranch, sourceAccount, destinationAccount);
+    }
+
+    public async Task<TransactionStatusModel> FundTransferStatus(TranactionStatusInquiryModel req)
+    {
+        if (req.JournalNo != 0)
+            return DataToBusinessMapping.ToFundTransferedModel
+                (await _transaction.SearchTransactionByJournalNo(req.JournalNo));
+        if (!string.IsNullOrEmpty(req.BVRCNO))
+            return DataToBusinessMapping.ToFundTransferedModel
+                (await _transaction.SearchTransactionByBVRCNO(req.BVRCNO));
+        throw new Exception("System Error [Transaction not found]");
+    }
+    public async Task<ReversalStatusModel> TransactionReversal(ReversalRequestModel req)
+    {
+        List<string>? journalnos = null;
+        if (req.JournalNo != 0)
+            journalnos = await _transaction.JournalnosBYJournalno(req.JournalNo, req.enteredBY);
+        if (!string.IsNullOrWhiteSpace(req.BVRCNO))
+            journalnos = await _transaction.JournalnosByBVRCNO(req.BVRCNO, req.enteredBY);
+        if (journalnos is null || journalnos.Count < 1)
+            throw new Exception("Unable To Process [Transaction not found]");
+        var result = await _transaction.ReverseTransaction(BusinessToDataMapping.ToReverseTansactionDTO(req));
+        if (result.TransNoA == 0 || result.Journalno == 0)
+            throw new Exception($"Unable To Process [{result.Message}]");
+        return DataToBusinessMapping.ToReversalStatusModel(result);
+
     }
 }

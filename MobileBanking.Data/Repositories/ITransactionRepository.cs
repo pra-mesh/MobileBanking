@@ -6,6 +6,9 @@ public interface ITransactionRepository
     Task<int> GenerateJournalNoAsync(JournalNoDTO journal);
     Task<int> GetTransNoAsync(TransactionDTO transactionData);
     Task InsertTransactionAsync(TransactionDataDTO transactionData);
-    Task SearchTransactionByBVRCNO(string BVRCNO);
-    Task SearchTransactionByJournalNo(string journalNO);
+    Task<List<string>> JournalnosByBVRCNO(string BVRCNO, string enteredBy);
+    Task<List<string>> JournalnosBYJournalno(int Journalno, string enteredBy);
+    Task<ReversalStatusDTO> ReverseTransaction(ReverseTansactionDTO reverseTansaction);
+    Task<TransactionStatusDTO> SearchTransactionByBVRCNO(string BVRCNO);
+    Task<TransactionStatusDTO> SearchTransactionByJournalNo(int journalNO);
 }

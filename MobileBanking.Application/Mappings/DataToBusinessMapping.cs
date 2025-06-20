@@ -55,4 +55,14 @@ internal static class DataToBusinessMapping
         }
         return miniStatements;
     }
+    public static TransactionStatusModel ToFundTransferedModel(TransactionStatusDTO dto) =>
+        new TransactionStatusModel { Journalno = dto.Journalno, BVRCNO = dto.BVRCNO, TransNoA = dto.TransNoA };
+    public static ReversalStatusModel ToReversalStatusModel(ReversalStatusDTO dto) =>
+        new ReversalStatusModel
+        {
+            BVRCNO = dto.BVRCNO,
+            Journalno = dto.Journalno,
+            TransNoA = dto.TransNoA,
+            Message = dto.Message
+        };
 }

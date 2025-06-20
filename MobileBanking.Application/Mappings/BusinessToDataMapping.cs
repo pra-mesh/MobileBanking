@@ -52,4 +52,13 @@ internal static class BusinessToDataMapping
             EntryDate = DateTime.Now
         };
 
+    public static ReverseTansactionDTO ToReverseTansactionDTO(ReversalRequestModel req) =>
+        new ReverseTansactionDTO
+        {
+            BVRCNO = req.BVRCNO,
+            Newbvrcno = req.Newbvrcno,
+            JournalNo = req.JournalNo,
+            Description = req.Description,
+            enteredBY = req.enteredBY
+        };
 }

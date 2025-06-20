@@ -7,8 +7,9 @@ public interface ISqlDataAccess : IDisposable
     Task<List<T>> LoadDataQuery<T, U>(string commandText, U parameters);
     Task<IEnumerable<T>> LoadDataTransactionQuery<T, U>(string commandText, U parameters);
     void RollBackTransaction();
+    Task SaveData<T>(string storeProcedure, T parameters);
     Task<int> SaveDataScalarTransaction<T>(string commantText, T parameters);
-    Task SaveDataTransactionProcedure<T>(string stroreProceddure, T parameters);
+    Task SaveDataTransactionProcedure<T>(string stroreProcedure, T parameters);
     Task SaveDataTransactionQuery<T>(string commandText, T parameters);
     Task<T> SingleDataQuery<T, U>(string commandText, U parameters);
     void StartTransaction();

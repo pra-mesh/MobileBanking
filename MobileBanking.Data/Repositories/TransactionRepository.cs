@@ -43,15 +43,44 @@ public class TransactionRepository : ITransactionRepository
             SELECT CAST(SCOPE_IDENTITY() as int)";
     }
 
-    public async Task SearchTransactionByJournalNo(string journalNO) =>
-        await _sqlDataAccess.SingleDataQuery<FundTransferStatusDTO, dynamic>
+    public async Task<TransactionStatusDTO> SearchTransactionByJournalNo(int journalNO) =>
+         await _sqlDataAccess.SingleDataQuery<TransactionStatusDTO, dynamic>
         ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where journalno=@journalno",
             new { journalNO });
 
-    public async Task SearchTransactionByBVRCNO(string BVRCNO) =>
-       await _sqlDataAccess.SingleDataQuery<FundTransferStatusDTO, dynamic>
-       ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where BVRCNO=@BVRCNO",
+    public async Task<TransactionStatusDTO> SearchTransactionByBVRCNO(string BVRCNO) =>
+       await _sqlDataAccess.SingleDataQuery<TransactionStatusDTO, dynamic>
+       ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where BVRCNO=@BVRCNO order by journalno",
            new { BVRCNO });
+
+    public async Task<List<string>> JournalnosByBVRCNO(string BVRCNO, string enteredBy) =>
+        await _sqlDataAccess.LoadDataQuery<string, dynamic>
+        (@"Select Distinct Journalno from Maintransbook 
+                    where BVRCNO =@BVRCNO and enteredBy=@enteredBy", new { BVRCNO, enteredBy });
+
+    public async Task<List<string>> JournalnosBYJournalno(int Journalno, string enteredBy) =>
+        await _sqlDataAccess.LoadDataQuery<string, dynamic>
+        (@"Select Distinct Journalno from Maintransbook
+                    where Journalno =@Journalno and enteredBy=@enteredBy", new { Journalno, enteredBy });
+
+    public async Task<ReversalStatusDTO> ReverseTransaction(ReverseTansactionDTO reverseTansaction)
+    {
+        var p = new DynamicParameters(reverseTansaction);
+        p.Add("@newJournalno", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        p.Add("@newTransno", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        p.Add("@Message", dbType: DbType.String, size: 100, direction: ParameterDirection.Output);
+
+        await _sqlDataAccess.SaveData("sp_TransactionReversal", p);
+        return new ReversalStatusDTO
+        {
+            BVRCNO = reverseTansaction.Newbvrcno ?? "",
+            Message = p.Get<string>("@Message"),
+            TransNoA = p.Get<int>("@newTransno"),
+            Journalno = p.Get<int>("@newJournalno"),
+        };
+
+    }
+
 
 }
 

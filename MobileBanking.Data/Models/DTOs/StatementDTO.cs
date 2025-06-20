@@ -11,5 +11,5 @@ public class MiniStatementDTO
 }
 public sealed class FullStatementDTO : MiniStatementDTO
 {
-    public decimal Amount { get; set; }
+    public decimal Balance { get; set; }
 }

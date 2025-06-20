@@ -60,8 +60,21 @@ public static class ISmartResponseMapping
     public static FundTransferResponse ToFundTransferResponse(FundTransferedModel model) =>
         new FundTransferResponse
         {
-            transactionId = model.journalno.ToString(),
+            transactionId = model.Journalno.ToString(),
             balance = model.balance,
             isoResponseCode = "00"
+        };
+    public static FundTransferStatusResponse ToFundTransferStatusResponse(TransactionStatusModel model)
+        => new FundTransferStatusResponse
+        {
+            transactionId = model.Journalno.ToString(),
+            isoResponseCode = model.Journalno == 0 ? "05" : "00"
+        };
+
+    public static FundTransferStatusResponse ToRevesalStatusResponse(ReversalStatusModel model) =>
+        new FundTransferStatusResponse
+        {
+            transactionId = model.Journalno.ToString(),
+            isoResponseCode = (model.Journalno == 0 || model.TransNoA == 0) ? "05" : "00"
         };
 }

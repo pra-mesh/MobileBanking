@@ -43,4 +43,18 @@ public static class ISMartRequestMapping
             amount = req.amount,
             enteredBy = "ISmart"
         };
+    public static TranactionStatusInquiryModel ToFundTransferStatusInquiryModel(FundTransferStatusCheckRequest req) =>
+        new TranactionStatusInquiryModel
+        {
+            enteredBY = "ISmart",
+            BVRCNO = req.transactionIdentifier
+        };
+    public static ReversalRequestModel ToReversalRequestModel(FundtransferReverseRequest req) =>
+        new ReversalRequestModel
+        {
+            enteredBY = "ISmart",
+            Newbvrcno = req.newTransactionIdentifier,
+            BVRCNO = req.transactionIdentifier,
+            Description = "Mobile Banking Reversed"
+        };
 }

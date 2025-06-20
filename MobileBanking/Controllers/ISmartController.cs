@@ -41,8 +41,8 @@ public class ISmartController : ControllerBase
     [HttpPost("ministatement")]
     public async Task<MiniStatementResponse> MiniStatement(MiniStatementRequest req)
     {
-        var miniStatementRequedt = ISMartRequestMapping.ToMiniStatementInquiryModel(req);
-        var result = await _statementServices.MiniStatement(miniStatementRequedt);
+        var miniStatementRequest = ISMartRequestMapping.ToMiniStatementInquiryModel(req);
+        var result = await _statementServices.MiniStatement(miniStatementRequest);
         return ISmartResponseMapping.ToMiniStatementResponse(result);
     }
     [HttpPost()]
@@ -51,5 +51,21 @@ public class ISmartController : ControllerBase
         var fundTransfer = ISMartRequestMapping.ToFundTransferModel(req);
         var result = await _transactionService.FundTransferAsync(fundTransfer);
         return ISmartResponseMapping.ToFundTransferResponse(result);
+    }
+
+    [HttpPost("fundTransferStatus")]
+    public async Task<FundTransferStatusResponse> FundTransferStatus(FundTransferStatusCheckRequest req)
+    {
+        var FundTransferStatus = ISMartRequestMapping.ToFundTransferStatusInquiryModel(req);
+        var result = await _transactionService.FundTransferStatus(FundTransferStatus);
+        return ISmartResponseMapping.ToFundTransferStatusResponse(result);
+    }
+
+    [HttpPost("Reversal")]
+    public async Task<FundTransferStatusResponse> ReversalIsmart(FundtransferReverseRequest req)
+    {
+        var result = await _transactionService.TransactionReversal
+            (ISMartRequestMapping.ToReversalRequestModel(req));
+        return ISmartResponseMapping.ToRevesalStatusResponse(result);
     }
 }
