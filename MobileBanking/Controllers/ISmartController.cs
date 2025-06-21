@@ -49,7 +49,7 @@ public class ISmartController : ControllerBase
     public async Task<FundTransferResponse> FundTransferResponse(FundTransferRequest req)
     {
         var fundTransfer = ISMartRequestMapping.ToFundTransferModel(req);
-        var result = await _transactionService.FundTransferbyProc(fundTransfer);
+        var result = await _transactionService.FundTransferbyProcWithBalance(fundTransfer);
         return ISmartResponseMapping.ToFundTransferResponse(result);
     }
 

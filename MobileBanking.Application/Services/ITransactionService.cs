@@ -3,8 +3,8 @@
 namespace MobileBanking.Application.Services;
 public interface ITransactionService
 {
-    Task<FundTransferedModel> FundTransferAsync(FundTransferModel req);
-    Task<FundTransferedModel> FundTransferbyProc(FundTransferModel req);
+    Task<TransactionStatusProcModel> FundTransferbyProc(FundTransferModel req);
+    Task<FundTransferedModel> FundTransferbyProcWithBalance(FundTransferModel req);
     Task<TransactionStatusModel> FundTransferStatus(TranactionStatusInquiryModel req);
     Task<ReversalStatusModel> TransactionReversal(ReversalRequestModel req);
 }
