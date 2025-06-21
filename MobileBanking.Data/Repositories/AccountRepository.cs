@@ -40,4 +40,8 @@ public class AccountRepository : IAccountRepository
           ("select top 1 ITEMNAME from Itms1 where REPLACE(acno,'.','')" +
           "+ITEMCODE =@fullAccountNo",
           new { fullAccountNo });
+    public async Task<decimal> GetDepBalance(string accountNo) =>
+       await _sqlDataAccess.SingleDataQuery<decimal, dynamic>
+       ("Select IsNUll((SELECT [dbo].[DepositBalance](@accountno)),0) as Balance", new { accountNo });
+
 }

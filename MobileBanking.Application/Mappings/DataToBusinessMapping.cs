@@ -65,4 +65,12 @@ internal static class DataToBusinessMapping
             TransNoA = dto.TransNoA,
             Message = dto.Message
         };
+    public static TransactionStatusProcModel ToTransactionStatusProcModel(TransactionProcStatusDTO dto) =>
+        new TransactionStatusProcModel
+        {
+            BVRCNO = dto.BVRCNO,
+            Journalno = dto.Journalno,
+            TransNoA = dto.TransNoA,
+            Message = dto.Message
+        };
 }

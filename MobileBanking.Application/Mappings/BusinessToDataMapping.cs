@@ -25,16 +25,16 @@ internal static class BusinessToDataMapping
             user = fundTransfer.enteredBy,
         };
 
-    public static TransactionDataDTO ToTransactionDataDTO(FundTransferModel req, AccountIdentifier account, int journalno, int Transno, bool isDebit) =>
-        new TransactionDataDTO
+    public static TransactionDataDTO ToTransactionDataDTO(FundTransferModel req, AccountIdentifier account,
+        int journalno, int Transno, bool isDebit, string? branchID) => new TransactionDataDTO
         {
             Journalno = journalno,
             BVRCNO = req.transCode ?? "",
             transDate = req.transDate,
-            branchid = (isDebit ? req.srcBranchId : req.destBranchId),
+            branchid = branchID,
             mano = account.Mano,
             acno = account.Acno,
-            itemcode = account.Acno,
+            itemcode = account.ItemCode,
             itemname = account.ItemName,
             itemlocation = req.enteredBy,
             receivedpaidBy = "Mobile Banking",
@@ -60,5 +60,20 @@ internal static class BusinessToDataMapping
             JournalNo = req.JournalNo,
             Description = req.Description,
             enteredBY = req.enteredBY
+        };
+
+    public static TransactionProcDTO ToTransactionProcDTO(FundTransferModel req) =>
+        new TransactionProcDTO
+        {
+            SrcAccount = req.srcAccount,
+            DestAccount = req.destAccount,
+            Description1 = req.description1,
+            Description2 = req.description2,
+            Description3 = req.description3,
+            TransCode = req.transCode,
+            TransDate = req.transDate,
+            EnteredBy = req.enteredBy,
+            Amount = req.amount
+
         };
 }

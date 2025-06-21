@@ -46,10 +46,7 @@ public class AccountValidation : IAccountValidation
             return await _account.GetBalance(accountNO);
         else
         {
-            var accountsDetail = await _account.GetAccountDetails(accountNO);
-            var accountDetail = accountsDetail.FirstOrDefault();
-            if (accountDetail is null) throw new AccountNotFoundException(accountNO);
-            return accountDetail.Balance - accountDetail.Gamt - accountDetail.Lamt - accountDetail.MinBal;
+            return await _account.GetDepBalance(accountNO);
         }
 
 

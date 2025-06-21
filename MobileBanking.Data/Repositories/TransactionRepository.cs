@@ -80,6 +80,21 @@ public class TransactionRepository : ITransactionRepository
         };
 
     }
+    public async Task<TransactionProcStatusDTO> TransactionByProc(TransactionProcDTO dto)
+    {
+        var p = new DynamicParameters(dto);
+        p.Add("@Journalno", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        p.Add("@Transno", dbType: DbType.Int32, direction: ParameterDirection.Output);
+        p.Add("@Message", dbType: DbType.String, size: 100, direction: ParameterDirection.Output);
+        await _sqlDataAccess.SaveData("sp_MobileTransaction", p);
+        return new TransactionProcStatusDTO
+        {
+            BVRCNO = dto.TransCode ?? "",
+            Message = p.Get<string>("@Message"),
+            TransNoA = p.Get<int>("@Transno"),
+            Journalno = p.Get<int>("@Journalno"),
+        };
+    }
 
 
 }

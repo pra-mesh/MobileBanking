@@ -5,3 +5,7 @@ public class TransactionStatusModel
     public required int Journalno { get; init; }
     public required int TransNoA { get; init; }
 }
+public class TransactionStatusProcModel : TransactionStatusModel
+{
+    public string? Message { get; set; } = "";
+}

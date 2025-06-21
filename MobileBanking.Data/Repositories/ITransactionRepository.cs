@@ -11,4 +11,5 @@ public interface ITransactionRepository
     Task<ReversalStatusDTO> ReverseTransaction(ReverseTansactionDTO reverseTansaction);
     Task<TransactionStatusDTO> SearchTransactionByBVRCNO(string BVRCNO);
     Task<TransactionStatusDTO> SearchTransactionByJournalNo(int journalNO);
+    Task<TransactionProcStatusDTO> TransactionByProc(TransactionProcDTO dto);
 }

@@ -144,3 +144,209 @@ IF @@TRANCOUNT > 0
 select @newJournalno=0, @newTransno =0, @Message='Reversal failed'
 End catch
 End
+
+go
+create or ALTER     procedure [dbo].[sp_GetJournalno]
+(@tdate date, @description nvarchar(100),@BranchID nvarchar(3), @user nvarchar(100) ,@newjno int  output) 
+as 
+declare @genJournal int =0;
+select @genJournal = Isnull([Values],0) from Official where Item='GenerateJournalNo'
+if(@genJournal=0)
+begin
+	INSERT INTO [dbo].[JournalNos]
+           ([Description]
+           ,[Date]
+           ,[BranchID])
+     VALUES (@description,@tdate,@BranchID) select @newjno=SCOPE_IDENTITY();
+end
+else
+Begin 
+	declare @tblname sysname
+	declare @fyStartName nvarchar(5) 
+	select @fyStartName =substring(fyname,3,3)  from fiscalyears where @tdate between startdate and enddate  
+	select @tblName ='JN' + @fyStartName 
+ 
+    DECLARE @DynamicSQL NVARCHAR(4000), @par nvarchar(100) 
+	declare @type nvarchar(10)
+	set @type ='U'
+    SET @DynamicSQL ='IF NOT EXISTS (SELECT * FROM sysobjects WHERE name=''' + @tblname + ''' and xtype=''' + @type +''') CREATE TABLE ' + @tblname + '([JournalNo] [int] IDENTITY(1,1) NOT NULL,	[Description] [nvarchar](255) NULL,	[Date] DateTime  null,	username nvarchar(100) NULL)';
+    EXECUTE sp_executesql @DynamicSQL;
+	
+	set @DynamicSQL =    'Insert into ' + @tblName +  '([description], UserName)    values (''' + @description + ''',''' + @user + ''')'
+		+' select @jnoout = cast(SCOPE_IDENTITY() as int)'
+		set @par =N'@jnoout int OUTPUT';
+	
+	EXECUTE sp_executesql @DynamicSQL,@par,@jnoout=@newjno output;
+    set @newjno= @newjno + Convert(int,@fyStartName) *1000000
+	INSERT INTO [dbo].[JournalNos]
+           ([JournalNo]
+           ,[Description]
+           ,[Date]
+           ,[BranchID])
+     VALUES (@newjno,@description,@tdate,@BranchID)
+end 
+
+go
+create or alter procedure sp_MobileTransaction ( @srcAccount nvarchar(20), @destAccount nvarchar(20), @description1 nvarchar(100),
+@description2 nvarchar(100)='Mobile Banking Transaction',@description3 nvarchar(100) ='',@transCode nvarchar(30)='',
+@transDate Datetime = getDate,@enteredBy nvarchar(50), @amount money , @journalno int =0 output, @transno int =0 output, @message nvarchar(100) output )
+as
+begin 
+declare @srcAccountCount int = 0, @srcAcno nvarchar(6), @srcMano nvarchar(3),@srcItemcode nvarchar(15),
+@srcItemName nvarchar(100), @srcBranchId nvarchar(100),@srcBalanceSide int =1, @srcBalance money
+declare @destAccountCount int = 0, @destAcno nvarchar(6), @destMano nvarchar(3),@destItemcode nvarchar(15),
+@destItemName nvarchar(100), @destBranchId nvarchar(100),@destBalanceSide int =1, @destBalance money
+declare @curJno int;
+
+Begin Try
+set @journalno=isNUll(@journalno, 0);
+set @transno=isNUll(@transno, 0);
+set @transDate = ISNULL(@transDate, GETDATE());
+set @description2=isNUll(@description2, 'Mobile Banking Transaction');
+set @description1=isNUll(@description1, 'Mobile Banking Transaction');
+
+
+drop table if exists #accounts
+select ACNO, MANO,ITEMCODE,ITEMNAME,branchid into #accounts from itms1 where REPLACE(ACNO,'.','')+ITEMCODE in (@srcAccount,@destAccount)
+if (select count(acno) from #accounts)<>2
+Begin
+select @srcAccountCount= count(acno) from #accounts where REPLACE(ACNO,'.','')+ITEMCODE =@srcAccount
+if(@srcAccountCount>1)
+ Throw 50001,'Multiple source Account found',16; 
+if(@srcAccountCount<1)
+  Throw 50002,'Source Account Not found',16; 
+select @destAccountCount= count(acno) from #accounts where REPLACE(ACNO,'.','')+ITEMCODE =@destAccount
+if(@destAccountCount>1)
+ Throw 50001,'Multiple Destination Account found',16; 
+ if(@destAccountCount<1)
+  Throw 50002,'Destination Account Not found',16; 
+end
+
+select Top 1 @srcMano=mano, @srcAcno= acno,@srcItemcode =ITEMCODE,@srcItemName =ItemName,@srcBranchId =branchId
+from #accounts where REPLACE(ACNO,'.','')+ITEMCODE =@srcAccount
+
+
+Select Top 1 @destMano=mano, @destAcno=acno, @destItemcode=ITEMCODE,@destItemName = ItemName,@destBranchId =branchId
+from itms1 where REPLACE(ACNO,'.','')+ITEMCODE =@destAccount
+
+
+select @srcBalanceSide=balanceside from mainaccount where acno=@srcMano
+select @destBalanceSide = balanceside from mainaccount where acno=@destBalanceSide
+
+if Exists(Select 1 from MainAccount where BalanceSide =-1 and acno=@srcMano)
+begin
+	if(@srcMano='030')
+		set @srcBalance =[dbo].[DepositBalance](@srcAccount)
+	else
+		Select @srcBalance=@srcBalanceSide*IsNUll((select Balance from ItemBal where REPLACE(acno,'.','')+ITEMCODE =@srcAccount),0)
+		
+	if(@srcBalance<@amount)
+	 throw 50003, 'Insufficient Source Account Balance',1
+end
+
+if Exists(Select 1 from MainAccount where BalanceSide =1 and acno=@destMano)
+begin
+	if(@destMano='030')
+		set @destBalance =[dbo].[DepositBalance](@destAccount)
+	else
+		Select @destBalance=@destBalanceSide*IsNUll((select Balance from ItemBal where REPLACE(acno,'.','')+ITEMCODE =@destAccount),0)
+	if(@destBalance<@amount)
+	 throw 50003, 'Insufficient Destination Account Balance',1
+end
+
+Begin TRANSACTION
+
+insert into TransOne (DESCRIPTION,transdate,TTID,TransactionType, PartyType ,EnteredBy) 
+values (@description1,@transdate,@transCode,'Mobile Banking','Mobile',@enteredBy)
+set @transno=SCOPE_IDENTITY();
+if(@transno = 0)
+ throw 50004, 'Could not generate Transno',1
+exec [dbo].[sp_GetJournalno] 
+				@tdate =@transdate,
+				@description = @description1,
+				@user = @enteredBy,
+				@branchid=@srcBranchId,
+				@newjno = @curJno OUTPUT
+if(@curJno = 0)
+ throw 50004, 'Could not generate Journalno',1
+set @journalno = @curJno;
+
+if(@destBranchId= @srcBranchId)
+Begin
+
+		insert into maintransbook ([Journalno],[BVRCNO],[transDate],[branchid],[mano],[acno],[itemcode],[itemname],[itemlocation]
+            ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
+            ,[EnteredBy],[EntryDate]) 
+            values (@curJno,@transCode,@transDate,@srcBranchId,@srcMano,@srcAcno,@srcItemcode,@srcItemName,'','Mobile Banking',@description2,'DR'
+            ,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+			  (@curJno,@transCode,@transDate,@destBranchId,@destMano,@destAcno,@destItemcode,@destItemName,'','Mobile Banking',@description2,'CR'
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())
+End
+else
+Begin
+declare @headItemName nvarchar(15),@srcBranchItemName nvarchar(15),@destBranchItemName nvarchar(15), 
+@ibtmano nvarchar(3)='120', @ibtAcno nvarchar(6) ='120.20', @headItemcode nvarchar(5)='00'
+select @headItemName=Isnull(branchName,'HEAD OFFICEE') from Branches where BranchId='00'
+select @srcBranchItemName=Isnull(branchName,@srcBranchId) from Branches where BranchId=@srcBranchId
+select @destBranchItemName=Isnull(branchName,@destBranchId) from Branches where BranchId=@destBranchId
+insert into maintransbook ([Journalno],[BVRCNO],[transDate],[branchid],[mano],[acno],[itemcode],[itemname],[itemlocation]
+            ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
+            ,[EnteredBy],[EntryDate]) 
+            values (@curJno,@transCode,@transDate,@srcBranchId,@srcMano,@srcAcno,@srcItemcode,@srcItemName,'','Mobile Banking',@description2,'DR'
+            ,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+			  (@curJno,@transCode,@transDate,@srcBranchId,@ibtmano,@ibtAcno,@headItemcode,@headItemName,'','Mobile Banking','IBT '+@description2,'CR'
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())
+
+exec [dbo].[sp_GetJournalno] 
+				@tdate =@transdate,
+				@description = @description1,
+				@user = @enteredBy,
+				@branchid=@srcBranchId,
+				@newjno = @curJno OUTPUT
+if(@curJno = 0)
+ throw 50004, 'Could not generate Journalno',1
+ insert into maintransbook ([Journalno],[BVRCNO],[transDate],[branchid],[mano],[acno],[itemcode],[itemname],[itemlocation]
+            ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
+            ,[EnteredBy],[EntryDate]) 
+            values  (@curJno,@transCode,@transDate,@destBranchId,@ibtmano,@ibtAcno,@headItemcode,@headItemName,'','Mobile Banking','IBT '+@description2,'DR'
+			,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+			   (@curJno,@transCode,@transDate,@destBranchId,@destMano,@destAcno,@destItemcode,@destItemName,'','Mobile Banking','IBT '+@description2,'CR'
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())
+exec [dbo].[sp_GetJournalno] 
+				@tdate =@transdate,
+				@description = @description1,
+				@user = @enteredBy,
+				@branchid=@srcBranchId,
+				@newjno = @curJno OUTPUT
+if(@curJno = 0)
+ throw 50004, 'Could not generate Journalno',1
+ 	 insert into maintransbook ([Journalno],[BVRCNO],[transDate],[branchid],[mano],[acno],[itemcode],[itemname],[itemlocation]
+            ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
+            ,[EnteredBy],[EntryDate]) 
+            values  (@curJno,@transCode,@transDate,'00',@ibtmano,@ibtAcno,@srcBranchId,@srcBranchItemName,'','Mobile Banking','IBT '+@description2,'DR'
+			,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+			  (@curJno,@transCode,@transDate,'00',@ibtmano,@ibtAcno,@destBranchId,@destBranchItemName,'','Mobile Banking','IBT '+@description2,'CR'
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())	
+
+end
+
+Commit Transaction
+set @message ='Transaction Successfull'
+
+End Try
+Begin Catch
+IF @@TRANCOUNT > 0
+	BEGIN
+		ROLLBACK TRANSACTION;
+	END
+PRINT ERROR_MESSAGE()
+PRINT 'Error on Line Number ' + Cast(ERROR_LINE() as nvarchar(10))
+set @journalno=0;
+set @transno=0;
+set @message =ERROR_MESSAGE();
+end Catch
+end
+
+
+
+
