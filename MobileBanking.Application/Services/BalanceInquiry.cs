@@ -15,13 +15,12 @@ public class BalanceInquiry : IBalanceInquiry
     }
     public async Task<AccountDetailModel> GetBalance(BalanceInquiryModel reqBalance)
     {
-        await _valid.IsSingleAccount(reqBalance.accountNumber);
+        _valid.InvalidAccount(reqBalance.accountNumber);
         var accounts = await _account.GetAccountDetails(reqBalance.accountNumber);
-
+        _valid.AccountCountValidation(accounts, reqBalance.accountNumber);
         var account = accounts.First();
         return DataToBusinessMapping.ToAccountDetailModel(account);
 
-
-
     }
+
 }

@@ -44,4 +44,7 @@ public class AccountRepository : IAccountRepository
        await _sqlDataAccess.SingleDataQuery<decimal, dynamic>
        ("Select IsNUll((SELECT [dbo].[DepositBalance](@accountno)),0) as Balance", new { accountNo });
 
+    public async Task<List<AccountFullDetalDTO>> AccountFullDetailByAccounttNO(string accountNo) =>
+        await _sqlDataAccess.LoadDataQuery<AccountFullDetalDTO, dynamic>("", new { accountNo })
+
 }

@@ -17,6 +17,14 @@ public class InsufficientBalanceException : Exception
     public InsufficientBalanceException(string accountNo) : base($"Insufficient Fund [{accountNo} doesn't have sufficent fund.]")
     { }
 }
+public class InvalidAccountException : Exception
+{
+    public InvalidAccountException(string accountNo) : base($"Invalid Account [Invalid accound format: {accountNo}]")
+    {
+
+    }
+
+}
 
 //public class InsufficientBalance : Exception
 //{

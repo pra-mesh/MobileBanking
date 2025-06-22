@@ -20,7 +20,7 @@ internal static class BusinessToDataMapping
         new JournalNoDTO
         {
             tdate = fundTransfer.transDate,
-            description = isIBT ? "IBT - " : "" + fundTransfer.description1,
+            description = (isIBT ? "IBT - " : "") + fundTransfer.description1,
             branchId = fundTransfer.srcBranchId,
             user = fundTransfer.enteredBy,
         };

@@ -35,14 +35,14 @@ public class ISmartController : ControllerBase
     public async Task<FullStatementResponse> FullStatement(FullStatementRequest req)
     {
         var statementRequest = ISMartRequestMapping.ToFullStatmentInquiryModel(req);
-        var result = await _statementServices.FullStatement(statementRequest);
+        var result = await _statementServices.FullStatementBalance(statementRequest);
         return ISmartResponseMapping.ToFullStatementResponse(result);
     }
     [HttpPost("ministatement")]
     public async Task<MiniStatementResponse> MiniStatement(MiniStatementRequest req)
     {
         var miniStatementRequest = ISMartRequestMapping.ToMiniStatementInquiryModel(req);
-        var result = await _statementServices.MiniStatement(miniStatementRequest);
+        var result = await _statementServices.MiniStatementBalance(miniStatementRequest);
         return ISmartResponseMapping.ToMiniStatementResponse(result);
     }
     [HttpPost()]

@@ -16,10 +16,11 @@ public class StatementServices : IStatementServices
         _balanceInquiry = balanceInquiry;
     }
 
-    public async Task<MiniStatementModel> MiniStatement(MiniStatementInquiryModel req)
+    public async Task<MiniStatementModel> MiniStatementBalance(MiniStatementInquiryModel req)
     {
-        await _accountValidation.IsSingleAccount(req.accountNumber);
+        _accountValidation.InvalidAccount(req.accountNumber);
         var balance = await _balanceInquiry.GetAccountDetails(req.accountNumber);
+        _accountValidation.AccountCountValidation(balance, req.accountNumber);
         var accountbal = balance.First();
         var statements = await _statement.MiniStatement(req.accountNumber, req.count);
         List<MiniStatement> miniStatements =
@@ -31,18 +32,32 @@ public class StatementServices : IStatementServices
             statementList = miniStatements
         };
     }
-
-    public async Task<FullStatementModel> FullStatement(FullStatmentInquiryModel req)
+    public async Task<List<MiniStatement>> MiniStatement(MiniStatementInquiryModel req)
     {
-        await _accountValidation.IsSingleAccount(req.accountNumber);
+        var statements = await _statement.MiniStatement(req.accountNumber, req.count);
+        return
+             DataToBusinessMapping.ToMiniStatmentList(statements);
+    }
+    public async Task<List<Statement>> FullStatements(FullStatmentInquiryModel req)
+    {
+        var statements = await _statement.FullStatement(req.accountNumber, req.fromDate, req.toDate);
+        return
+             DataToBusinessMapping.ToStatementList(statements);
+    }
+
+
+    public async Task<FullStatementModel> FullStatementBalance(FullStatmentInquiryModel req)
+    {
+        _accountValidation.InvalidAccount(req.accountNumber);
         var balance = await _balanceInquiry.GetAccountDetails(req.accountNumber);
+        _accountValidation.AccountCountValidation(balance, req.accountNumber);
         var accountBal = balance.First();
         var statements = await _statement.FullStatement(req.accountNumber, req.fromDate, req.toDate);
         List<Statement> fullStatements = DataToBusinessMapping.ToStatementList(statements);
         return new FullStatementModel
         {
-            minimumBalance = 0,
-            availableBalance = 0,
+            minimumBalance = accountBal.MinBal,
+            availableBalance = accountBal.Balance,
             statementList = fullStatements
         };
 

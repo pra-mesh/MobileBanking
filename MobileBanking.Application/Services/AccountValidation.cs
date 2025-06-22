@@ -1,4 +1,5 @@
 ﻿using MobileBanking.Application.Models;
+using MobileBanking.Data.Models.DTOs;
 using MobileBanking.Data.Repositories;
 
 namespace MobileBanking.Application.Services;
@@ -61,4 +62,17 @@ public class AccountValidation : IAccountValidation
             ItemCode = accountNO.Substring(5),
             ItemName = await _account.GetItemName(accountNO)
         };
+    public void AccountCountValidation(List<AccountDetailDTO> accounts, string accountNo)
+    {
+
+        if (accounts.Count == 0 || accounts.Count < 1)
+            throw new AccountNotFoundException(accountNo);
+        if (accounts.Count > 1)
+            throw new MultipleAccountsFoundException(accountNo);
+    }
+    public void InvalidAccount(string accountNo)
+    {
+        if (accountNo.Length < 6)
+            throw new InvalidAccountException(accountNo);
+    }
 }
