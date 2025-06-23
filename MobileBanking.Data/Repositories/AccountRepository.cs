@@ -1,5 +1,7 @@
 ﻿using MobileBanking.Data.Models.DTOs;
+using MobileBanking.Data.Models.RequestModels;
 using MobileBanking.Data.Services.Connection;
+using System.Diagnostics;
 
 namespace MobileBanking.Data.Repositories;
 public class AccountRepository : IAccountRepository
@@ -44,7 +46,20 @@ public class AccountRepository : IAccountRepository
        await _sqlDataAccess.SingleDataQuery<decimal, dynamic>
        ("Select IsNUll((SELECT [dbo].[DepositBalance](@accountno)),0) as Balance", new { accountNo });
 
-    public async Task<List<AccountFullDetalDTO>> AccountFullDetailByAccounttNO(string accountNo) =>
-        await _sqlDataAccess.LoadDataQuery<AccountFullDetalDTO, dynamic>("", new { accountNo })
+    public async Task<int> GetAccountCount(AccountDetailPaged accountDetail) =>
+        await _sqlDataAccess.SingleDataQuery<int, dynamic>(@"select count(accountno) from DepositMaster d
+join MemberDetail m on d.MemberNo = m.MemberNo
+ WHERE (@memberno IS NULL OR m.MemberNo = @memberno) AND
+        (@accountNumber IS NULL OR REPLACE(MainBookNo, '.', '') + d.AccountNo = @accountNumber) AND
+        (@mobileNumber IS NULL OR m.mobileno = @mobileNumber)", accountDetail);
+    public async Task<List<AccountFullDetalDTO>> AllAccountFullDetails(AccountDetailPaged accountDetail)
+    {
+        var stopwatch = Stopwatch.StartNew();
+        Console.WriteLine(accountDetail.Offset);
+        var result = await _sqlDataAccess.LoadData<AccountFullDetalDTO, dynamic>("sp_GetDepositAccountDetails",
+             accountDetail);
+        Console.WriteLine("Call SomeMethod {0} ms", stopwatch.ElapsedMilliseconds);
+        return result;
+    }
 
 }

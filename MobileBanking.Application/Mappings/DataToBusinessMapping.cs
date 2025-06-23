@@ -73,4 +73,35 @@ internal static class DataToBusinessMapping
             TransNoA = dto.TransNoA,
             Message = dto.Message
         };
+    public static AccountDetailFullModel ToAccountDetailFullModel(AccountFullDetalDTO dto) =>
+        new AccountDetailFullModel
+        {
+            MemberId = dto.MemberId,
+            MemberName = dto.MemberName,
+            Address = dto.Address,
+            MobileNumber = dto.MobileNumber,
+            AccountNumber = dto.AccountNumber,
+            BranchCode = dto.BranchCode,
+            IsActive = dto.IsActive,
+            DateOfBirth = dto.DateOfBirth,
+            Gender = dto.Gender,
+            AccountType = dto.AccountType,
+            SavingType = dto.SavingType,
+            LockedAmount = dto.LockedAmount,
+            GuarantedAmt = dto.GuarantedAmt,
+            LedgerBalance = dto.LedgerBalance,
+            MinBal = dto.MinBal,
+            AvailableBalance = dto.AvailableBalance,
+            ExpireDate = dto.ExpireDate,
+            EntranceDate = dto.EntranceDate,
+            AccruedInterest = dto.AccruedInterest,
+            InterestRate = dto.InterestRate,
+            InterestStartDate = dto.InterestStartDate,
+            IdType = dto.IdType,
+            IdNumber = dto.IdNumber,
+            IdIssuePlace = dto.IdIssuePlace,
+            IssueDate = dto.IssueDate
+
+        };
+
 }

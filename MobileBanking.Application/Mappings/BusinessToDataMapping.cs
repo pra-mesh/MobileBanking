@@ -1,5 +1,6 @@
 ﻿using MobileBanking.Application.Models;
 using MobileBanking.Data.Models.DTOs;
+using MobileBanking.Data.Models.RequestModels;
 
 namespace MobileBanking.Application.Mappings;
 internal static class BusinessToDataMapping
@@ -75,5 +76,13 @@ internal static class BusinessToDataMapping
             EnteredBy = req.enteredBy,
             Amount = req.amount
 
+        };
+
+    public static AccountDetailPaged ToAccountDetailPagedDTO(AllDetailsQueryModel req) =>
+        new AccountDetailPaged
+        {
+            MemberNo = req.MemberNo,
+            AccountNumber = req.AccountNumber,
+            MobileNumber = req.MobileNumber,
         };
 }

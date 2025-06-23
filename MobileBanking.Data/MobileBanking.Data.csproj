@@ -17,8 +17,4 @@
     <ProjectReference Include="..\MobileBanking.Shared\MobileBanking.Shared.csproj" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Models\RequestModels\" />
-  </ItemGroup>
-
 </Project>

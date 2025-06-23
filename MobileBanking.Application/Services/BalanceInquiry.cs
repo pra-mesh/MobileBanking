@@ -1,5 +1,7 @@
 ﻿using MobileBanking.Application.Mappings;
 using MobileBanking.Application.Models;
+using MobileBanking.Data.Models.DTOs;
+using MobileBanking.Data.Models.RequestModels;
 using MobileBanking.Data.Repositories;
 
 namespace MobileBanking.Application.Services;
@@ -23,4 +25,25 @@ public class BalanceInquiry : IBalanceInquiry
 
     }
 
+    public async Task<List<AccountDetailFullModel>> GetAccountList(AllDetailsQueryModel req)
+    {
+        var query = BusinessToDataMapping.ToAccountDetailPagedDTO(req);
+        int count = await _account.GetAccountCount(query);
+        var tasks = new List<Task<List<AccountFullDetalDTO>>>();
+        for (int i = 0; i < count / 2; i++)
+        {
+            var pagedQuery = new AccountDetailPaged
+            {
+                Offset = 2 * i,
+                Limit = 2,
+                AccountNumber = query.AccountNumber,
+                MobileNumber = query.MobileNumber,
+                MemberNo = query.MemberNo,
+            };
+            tasks.Add(_account.AllAccountFullDetails(pagedQuery));
+        }
+        var results = await Task.WhenAll(tasks);
+        var allAccounts = results.SelectMany(r => r).ToList().Distinct();
+        return allAccounts.Select(DataToBusinessMapping.ToAccountDetailFullModel).ToList();
+    }
 }

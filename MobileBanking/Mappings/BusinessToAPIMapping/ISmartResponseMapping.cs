@@ -5,6 +5,8 @@ namespace MobileBanking.Mappings.BusinessToAPIMapping;
 
 public static class ISmartResponseMapping
 {
+    private static object accountNumber;
+
     public static BalanceInquiryResponse ToBalanceInquiryResponse(AccountDetailModel account) =>
         new BalanceInquiryResponse { availableBalance = account.Balance, minimumBalance = account.MinBal };
     public static FullStatementResponse ToFullStatementResponse(FullStatementModel fullStatement) =>
@@ -77,4 +79,27 @@ public static class ISmartResponseMapping
             transactionId = model.Journalno.ToString(),
             isoResponseCode = (model.Journalno == 0 || model.TransNoA == 0) ? "05" : "00"
         };
+    public static AccountFullDetail ToAccountFullDetail(AccountDetailFullModel model) =>
+        new AccountFullDetail
+        {
+            memberId = model.MemberId,
+            memberName = model.MemberName,
+            address = model.Address,
+            mobileNumber = model.MobileNumber,
+            accountNumber = model.AccountNumber,
+            branchCode = model.BranchCode,
+            isActive = model.IsActive,
+            dateOfBirth = model.DateOfBirth,
+            gender = model.Gender,
+            accruedInterest = model.AccruedInterest,
+            interestRate = model.InterestRate,
+            accountType = model.AccountType,
+            availableBalance = model.AvailableBalance,
+            minimumBalance = model.MinBal,
+            idType = model.IdType,
+            idNumber = model.IdNumber,
+            idIssuePlace = model.IdIssuePlace,
+            issueDate = model.IssueDate
+        };
+
 }

@@ -68,4 +68,20 @@ public class ISmartController : ControllerBase
             (ISMartRequestMapping.ToReversalRequestModel(req));
         return ISmartResponseMapping.ToRevesalStatusResponse(result);
     }
+    [HttpPost("AccountValidation")]
+    public async Task<AccountsDetailResponse> AccountDetail(AccountDetailByIdRequest req)
+    {
+        if (string.IsNullOrWhiteSpace(req.accountNumber) && string.IsNullOrWhiteSpace(req.mobileNumber))
+            throw new Exception("Unable To Process [Required either  mobile number or account no]");
+        var result = await _balanceInquiry.GetAccountList(ISMartRequestMapping.ToAllDetailsQueryModel(req));
+        if (result.Count < 1)
+            throw new Exception("Unable To Process [No Account found]");
+        return new AccountsDetailResponse
+        {
+            accountList = result.Select(ISmartResponseMapping.ToAccountFullDetail).ToList(),
+            isoResponseCode = "00"
+        };
+    }
+
+
 }

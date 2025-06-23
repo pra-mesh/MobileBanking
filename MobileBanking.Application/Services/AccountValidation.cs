@@ -21,8 +21,6 @@ public class AccountValidation : IAccountValidation
         if (accountCount > 1)
             throw new MultipleAccountsFoundException(accountNo);
     }
-
-
     public async Task<bool> HasSufficientBalance(string accountNO, bool isDebit, decimal transactionBalance)
     {
         await IsSingleAccount(accountNO);
@@ -39,7 +37,6 @@ public class AccountValidation : IAccountValidation
             throw new InsufficientBalanceException(accountNO);
         return true;
     }
-
     public async Task<decimal> GeBalance(string accountNO)
     {
         string mainAccountNO = accountNO.Substring(0, 3);
@@ -52,7 +49,6 @@ public class AccountValidation : IAccountValidation
 
 
     }
-
     public async Task<string> GetBranch(string accountNO) => await _account.GetAccountBranch(accountNO);
     public async Task<AccountIdentifier> AccountStructure(string accountNO) =>
         new AccountIdentifier
@@ -64,7 +60,6 @@ public class AccountValidation : IAccountValidation
         };
     public void AccountCountValidation(List<AccountDetailDTO> accounts, string accountNo)
     {
-
         if (accounts.Count == 0 || accounts.Count < 1)
             throw new AccountNotFoundException(accountNo);
         if (accounts.Count > 1)

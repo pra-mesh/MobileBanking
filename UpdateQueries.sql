@@ -347,6 +347,78 @@ set @message =ERROR_MESSAGE();
 end Catch
 end
 
+go
+
+CREATE or alter PROCEDURE sp_GetDepositAccountDetails
+    @memberno VARCHAR(20) = NULL,
+    @accountNumber VARCHAR(50) = NULL,
+    @mobileNumber VARCHAR(20) = NULL,
+    @offset INT = 0,
+    @limit INT = 10
+AS
+begin
+   SET NOCOUNT ON;
+	select 
+		m.MemberNo as memberId,
+		m.MemName as memberName,
+		VdcMun as address,
+		m.mobileno as mobileNumber,
+		Replace(MainBookNo,'.','')+d.AccountNo as accountNumber,
+		m.BranchID as branchCode, 
+		Case 
+			when ISnull(d.[Disabled],'False') ='False' then 'True'
+			else 'False' 
+		end as isActive,
+		DateofBirth as  dateOfBirth,
+		case 
+			when Gender='m' then 'Male'
+			when Gender='f' then 'female'
+			else 'other' 
+		end as Gender,
+		DepositType as accountType,
+		s.SavingType,
+		isnull(d.LockedAmount,0) as LockedAmount,
+		isNull(GuarantedAmt,0) as GuarantedAmt,  
+		Case
+			when isnull(d.MinimumBalance,0)<>0 then isnull(d.MinimumBalance,0)
+			else s.MinBal
+		end as minBal, 
+		balance as ledgerBalance,
+		balance-isNull(GuarantedAmt,0)-
+		Case 
+			when isnull(d.MinimumBalance,0)<>0 then isnull(d.MinimumBalance,0)
+			else s.MinBal
+		end-isnull(d.LockedAmount,0) as availablebalance,
+		d.expiredate,
+		d.EntranceDate,
+		dbo.Interest(MainBookNo,d.AccountNo,m.BranchID,getDate()) as accruedInterest, 
+		case 
+			when isNUll(d.InterestRate,0)=0 then isnull(s.RateOfInterest,0)
+			else d.InterestRate
+		end as interestrate, 
+		case 
+			when isNUll(d.InterestStartDAte,d.EntranceDate)>s.IntStartDate then isNUll(d.InterestStartDAte,d.EntranceDate) 
+			else s.IntStartDate
+		end as InterestStartDate,
+		'Citizenship' as idType,
+		isNUll(m.citizenshipno,'') as idNumber,
+		isNUll(m.citDistrict,'') as idIssuePlace,
+		isNUll(m.citDate,'') as issueDate 
+	from DepositMaster d
+	join MemberDetail m on d.MemberNo = m.MemberNo
+	join savings s on  s.AccountNo=d.MainBookNo
+	join depBal b on d.MainBookNo =b.ACNO and d.AccountNo=b.ItemCode 
+	left join (
+		select acno, itemno,isnull(SUM(lockedAmount),0)as GuarantedAmt 
+		from Guarantee group by Acno, itemno 
+		) as gt on gt.acno=d.MainBookNo and gt.ItemNo= d.AccountNo
+	 WHERE 
+        (@memberno IS NULL OR m.MemberNo = @memberno) AND
+        (@accountNumber IS NULL OR REPLACE(MainBookNo, '.', '') + d.AccountNo = @accountNumber) AND
+        (@mobileNumber IS NULL OR m.mobileno = @mobileNumber)
+	ORDER BY accountNumber
+	offset @offset  rows fetch next @limit rows only
+end
 
 
 

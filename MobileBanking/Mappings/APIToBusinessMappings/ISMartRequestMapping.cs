@@ -57,4 +57,10 @@ public static class ISMartRequestMapping
             BVRCNO = req.transactionIdentifier,
             Description = "Mobile Banking Reversed"
         };
+    public static AllDetailsQueryModel ToAllDetailsQueryModel(AccountDetailByIdRequest req) =>
+        new AllDetailsQueryModel
+        {
+            MobileNumber = req.mobileNumber,
+            AccountNumber = req.accountNumber,
+        };
 }

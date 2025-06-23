@@ -45,7 +45,7 @@ public class StatementServices : IStatementServices
              DataToBusinessMapping.ToStatementList(statements);
     }
 
-
+    //HACK: You should not construct api model in service layer like this instead do it on API/presenation layer.
     public async Task<FullStatementModel> FullStatementBalance(FullStatmentInquiryModel req)
     {
         _accountValidation.InvalidAccount(req.accountNumber);
@@ -60,8 +60,5 @@ public class StatementServices : IStatementServices
             availableBalance = accountBal.Balance,
             statementList = fullStatements
         };
-
     }
-
-
 }
