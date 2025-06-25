@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc.Filters;
 using MobileBanking.Application.AuthService;
 using MobileBanking.Application.Constants;
+using MobileBanking.Models.Response;
 
 
 namespace MobileBanking.Middleware;
@@ -20,12 +21,23 @@ public class ApiKeyAuthFilter : IAuthorizationFilter
         var userApiKey = context.HttpContext.Request.Headers[ApiKeyConstants.ApiKeyHeaderName];
         if (string.IsNullOrEmpty(userApiKey))
         {
-            context.Result = new BadRequestResult();
+            var response = new BaseResponse<string>
+            {
+                data = "API key is required",
+                statusCode = "05"
+            };
+            context.Result = new BadRequestObjectResult(response);
             return;
         }
         if (!_apiKeyValidation.IsValidAPIKey(userApiKey))
         {
-            context.Result = new UnauthorizedResult();
+            var response = new BaseResponse<string>
+            {
+                data = "The provided API key is not valid.",
+                statusCode = "05"
+            };
+            context.Result = new UnauthorizedObjectResult(response);
+            return;
         }
     }
 }

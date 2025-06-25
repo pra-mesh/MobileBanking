@@ -78,8 +78,8 @@ internal static class BusinessToDataMapping
 
         };
 
-    public static AccountDetailPaged ToAccountDetailPagedDTO(AllDetailsQueryModel req) =>
-        new AccountDetailPaged
+    public static AccountQueryDTO ToAccountQueryDTO(AccountQueryModel req) =>
+        new AccountQueryDTO
         {
             MemberNo = req.MemberNo,
             AccountNumber = req.AccountNumber,

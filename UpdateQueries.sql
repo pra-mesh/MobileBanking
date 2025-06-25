@@ -197,7 +197,7 @@ declare @srcAccountCount int = 0, @srcAcno nvarchar(6), @srcMano nvarchar(3),@sr
 declare @destAccountCount int = 0, @destAcno nvarchar(6), @destMano nvarchar(3),@destItemcode nvarchar(15),
 @destItemName nvarchar(100), @destBranchId nvarchar(100),@destBalanceSide int =1, @destBalance money
 declare @curJno int;
-
+DBCC TRACEON(460, -1);
 Begin Try
 set @journalno=isNUll(@journalno, 0);
 set @transno=isNUll(@transno, 0);
@@ -413,6 +413,7 @@ begin
 		from Guarantee group by Acno, itemno 
 		) as gt on gt.acno=d.MainBookNo and gt.ItemNo= d.AccountNo
 	 WHERE 
+		(d.Disabled = 0 or d.Disabled is null) and
         (@memberno IS NULL OR m.MemberNo = @memberno) AND
         (@accountNumber IS NULL OR REPLACE(MainBookNo, '.', '') + d.AccountNo = @accountNumber) AND
         (@mobileNumber IS NULL OR m.mobileno = @mobileNumber)

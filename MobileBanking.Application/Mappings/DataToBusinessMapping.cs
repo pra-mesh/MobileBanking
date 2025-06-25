@@ -77,7 +77,7 @@ internal static class DataToBusinessMapping
         new AccountDetailFullModel
         {
             MemberId = dto.MemberId,
-            MemberName = dto.MemberName,
+            AccountHolderName = dto.MemberName,
             Address = dto.Address,
             MobileNumber = dto.MobileNumber,
             AccountNumber = dto.AccountNumber,
@@ -104,4 +104,41 @@ internal static class DataToBusinessMapping
 
         };
 
+    public static AccountModel ToAccountModel(AccountDTO dto) =>
+        new AccountModel
+        {
+            AccountHolderName = dto.MemberName,
+            AccountNumber = dto.AccountNumber,
+            BranchCode = dto.BranchCode
+        };
+    public static LoanInfoModel ToLoanInfoModel(LoanInfoDTO dto) =>
+        new LoanInfoModel
+        {
+            LoanType = dto.LoanType,
+            AccountNumber = dto.AccountNumber,
+            InterestRate = dto.InterestRate,
+            IssuedOn = dto.IssuedOn,
+            MaturesOn = dto.MaturesOn,
+            NoOfKista = dto.NoOfKista,
+            KistaPeriod = dto.KistaPeriod,
+            InterestType = dto.InterestType,
+            DisburseAmount = dto.DisburseAmount,
+            Balance = dto.Balance,
+            IntInstallments = dto.IntInstallments,
+            PrincipalInstallments = dto.PrincipalInstallments,
+        };
+    public static LoanStatementModel ToLoanStatement(LoanStatementDTO dto) =>
+        new LoanStatementModel
+        {
+            TranDate = dto.tranDate,
+            InterestDate = dto.interestDate,
+            Reference = dto.reference,
+            IssueAmount = dto.IssueAmount,
+            Payment = dto.Payment,
+            Principal = dto.Principal,
+            Interest = dto.Interest,
+            Fine = dto.Fine,
+            Discount = dto.Discount,
+            Balance = dto.Balance
+        };
 }

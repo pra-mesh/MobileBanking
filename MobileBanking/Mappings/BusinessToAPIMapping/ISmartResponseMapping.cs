@@ -5,8 +5,6 @@ namespace MobileBanking.Mappings.BusinessToAPIMapping;
 
 public static class ISmartResponseMapping
 {
-    private static object accountNumber;
-
     public static BalanceInquiryResponse ToBalanceInquiryResponse(AccountDetailModel account) =>
         new BalanceInquiryResponse { availableBalance = account.Balance, minimumBalance = account.MinBal };
     public static FullStatementResponse ToFullStatementResponse(FullStatementModel fullStatement) =>
@@ -14,51 +12,37 @@ public static class ISmartResponseMapping
         {
             minimumBalance = fullStatement.minimumBalance,
             availableBalance = fullStatement.availableBalance,
-            statementList = GetSatemenlist(fullStatement.statementList)
+            statementList = fullStatement.statementList?.Select(GetSatemenlist).ToList(),
         };
 
-    private static List<FullStatementList> GetSatemenlist(List<Statement>? statementList)
+    private static FullStatementList GetSatemenlist(Statement statement) =>
+    new FullStatementList
     {
-        List<FullStatementList> st = new List<FullStatementList>();
-        if (statementList is not null)
-            foreach (Statement statement in statementList)
-            {
-                st.Add(new FullStatementList
-                {
-                    date = statement.date.Date.ToString(),
-                    remarks = statement.remarks,
-                    amount = statement.amount,
-                    type = statement.type,
-                    Balance = statement.Balance
-                });
-            }
-        return st;
-    }
+        date = statement.date.Date.ToString(),
+        remarks = statement.remarks,
+        amount = statement.amount,
+        type = statement.type,
+        Balance = statement.Balance
+    };
+
     public static MiniStatementResponse ToMiniStatementResponse(MiniStatementModel miniStatement) =>
         new MiniStatementResponse
         {
             minimumBalance = miniStatement.minimumBalance,
             availableBalance = miniStatement.availableBalance,
-            statementList = GetMiniStatementList(miniStatement.statementList)
+            statementList = miniStatement.statementList?.Select(GetMiniStatement).ToList()
         };
 
-    private static List<MiniStatementList> GetMiniStatementList(List<MiniStatement>? statementList)
+    private static MiniStatementList GetMiniStatement(MiniStatement statement) =>
+    new MiniStatementList
     {
-        List<MiniStatementList> miniStatements = new();
-        if (statementList is not null)
-            foreach (var statement in statementList)
-            {
-                miniStatements.Add(new MiniStatementList
-                {
-                    date = statement.date.Date.ToString(),
-                    remarks = statement.remarks,
-                    amount = statement.amount,
-                    type = statement.type,
-                });
+        date = statement.date.Date.ToString(),
+        remarks = statement.remarks,
+        amount = statement.amount,
+        type = statement.type,
+    };
 
-            }
-        return miniStatements;
-    }
+
     public static FundTransferResponse ToFundTransferResponse(FundTransferedModel model) =>
         new FundTransferResponse
         {
@@ -83,7 +67,7 @@ public static class ISmartResponseMapping
         new AccountFullDetail
         {
             memberId = model.MemberId,
-            memberName = model.MemberName,
+            memberName = model.AccountHolderName,
             address = model.Address,
             mobileNumber = model.MobileNumber,
             accountNumber = model.AccountNumber,
@@ -100,6 +84,41 @@ public static class ISmartResponseMapping
             idNumber = model.IdNumber,
             idIssuePlace = model.IdIssuePlace,
             issueDate = model.IssueDate
+        };
+
+    public static Accounts ToAccounts(AccountModel model) =>
+        new Accounts
+        {
+            accountNumber = model.AccountNumber,
+            memberName = model.AccountHolderName,
+            branchCode = model.BranchCode,
+        };
+    public static LoanDetailResponse ToLoanDetailResponse(LoanInfoModel model) =>
+        new LoanDetailResponse
+        {
+            LoanType = model.LoanType,
+            AccountNumber = model.AccountNumber,
+            interestRate = model.InterestRate,
+            issuedOn = model.IssuedOn,
+            maturityDate = model.MaturesOn,
+            duration = model.NoOfKista + " " + model.KistaPeriod,
+            interestType = model.InterestType,
+            disbursedAmount = model.DisburseAmount,
+            outstandingBalance = model.Balance,
+        };
+    public static LoanFullStatement ToLoanFullStatement(LoanStatementModel model) =>
+        new LoanFullStatement
+        {
+            TranDate = model.TranDate,
+            InterestDate = model.InterestDate,
+            Description = model.Reference,
+            IssuedAmount = model.IssueAmount,
+            Payment = model.Payment,
+            Principal = model.Principal,
+            Interest = model.Interest,
+            Fine = model.Fine,
+            Discount = model.Discount,
+            Balance = model.Balance,
         };
 
 }

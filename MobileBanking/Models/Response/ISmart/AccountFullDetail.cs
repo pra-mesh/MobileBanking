@@ -1,13 +1,10 @@
 ﻿namespace MobileBanking.Models.Response.ISmart;
 
-public class AccountFullDetail
+public class AccountFullDetail : Accounts
 {
     public required string memberId { get; init; }
-    public required string memberName { get; init; }
     public required string address { get; init; }
     public required string mobileNumber { get; init; }
-    public required string accountNumber { get; init; }
-    public string? branchCode { get; init; }
     public bool isActive { get; init; }
     public string? dateOfBirth { get; init; }
     public string? gender { get; init; }

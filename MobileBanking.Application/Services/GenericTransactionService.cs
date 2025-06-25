@@ -2,7 +2,6 @@
 using MobileBanking.Application.Models;
 using MobileBanking.Data.Repositories;
 using MobileBanking.Data.Services;
-using System.Diagnostics;
 
 namespace MobileBanking.Application.Services;
 public class GenericTransactionService : IGenericTransactionService
@@ -72,14 +71,12 @@ public class GenericTransactionService : IGenericTransactionService
         try
         {
             //ISSUES: This task is taking too much time fix this
-            var stopwatch = Stopwatch.StartNew();
             (AccountIdentifier headoffice,
                 AccountIdentifier sourceBranch,
                 AccountIdentifier destBranch,
                 AccountIdentifier sourceAccount,
                 AccountIdentifier destinationAccount) = await BranchAccountDetail(req);
             _unitOfWork.Begin();
-            Console.WriteLine("Call SomeMethod {0} ms", stopwatch.ElapsedMilliseconds);
             var mappedTransaction = BusinessToDataMapping.ToTransactionModel(req);
             int transno = await _transaction.GetTransNoAsync(mappedTransaction);
             if (transno == 0) throw new Exception("Couldn't generate tranaction no.");

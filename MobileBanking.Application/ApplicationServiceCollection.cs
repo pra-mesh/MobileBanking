@@ -16,6 +16,7 @@ public static class ApplicationServiceCollection
         services.AddScoped<IStatementServices, StatementServices>();
         services.AddScoped<ITenantProvider, TenantProvider>();
         services.AddScoped<ITransactionService, TransactionService>();
+        services.AddScoped<ILoanServices, LoanServices>();
         services.AddDataServices();
         return services;
     }

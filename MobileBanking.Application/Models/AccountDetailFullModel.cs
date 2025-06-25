@@ -1,12 +1,11 @@
 ﻿namespace MobileBanking.Application.Models;
-public class AccountDetailFullModel
+public class AccountDetailFullModel : AccountModel
 {
     public required string MemberId { get; init; }
-    public required string MemberName { get; init; }
+
     public required string Address { get; init; }
     public required string MobileNumber { get; init; }
-    public required string AccountNumber { get; init; }
-    public string? BranchCode { get; init; }
+
     public bool IsActive { get; init; }
     public string? DateOfBirth { get; init; }
     public string? Gender { get; init; } = "Male";

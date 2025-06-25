@@ -1,7 +1,6 @@
 ﻿using MobileBanking.Data.Models.DTOs;
 using MobileBanking.Data.Models.RequestModels;
 using MobileBanking.Data.Services.Connection;
-using System.Diagnostics;
 
 namespace MobileBanking.Data.Repositories;
 public class AccountRepository : IAccountRepository
@@ -46,20 +45,27 @@ public class AccountRepository : IAccountRepository
        await _sqlDataAccess.SingleDataQuery<decimal, dynamic>
        ("Select IsNUll((SELECT [dbo].[DepositBalance](@accountno)),0) as Balance", new { accountNo });
 
-    public async Task<int> GetAccountCount(AccountDetailPaged accountDetail) =>
+    public async Task<int> GetAccountCount(AccountQueryDTO accountDetail) =>
         await _sqlDataAccess.SingleDataQuery<int, dynamic>(@"select count(accountno) from DepositMaster d
-join MemberDetail m on d.MemberNo = m.MemberNo
- WHERE (@memberno IS NULL OR m.MemberNo = @memberno) AND
+        join MemberDetail m on d.MemberNo = m.MemberNo
+        WHERE (d.Disabled = 0 or d.Disabled is null) and (@memberno IS NULL OR m.MemberNo = @memberno) AND
         (@accountNumber IS NULL OR REPLACE(MainBookNo, '.', '') + d.AccountNo = @accountNumber) AND
         (@mobileNumber IS NULL OR m.mobileno = @mobileNumber)", accountDetail);
-    public async Task<List<AccountFullDetalDTO>> AllAccountFullDetails(AccountDetailPaged accountDetail)
+    public async Task<List<AccountFullDetalDTO>> AllAccountFullDetails(AccountPagedQueryDTO accountDetail)
     {
-        var stopwatch = Stopwatch.StartNew();
-        Console.WriteLine(accountDetail.Offset);
+
         var result = await _sqlDataAccess.LoadData<AccountFullDetalDTO, dynamic>("sp_GetDepositAccountDetails",
              accountDetail);
-        Console.WriteLine("Call SomeMethod {0} ms", stopwatch.ElapsedMilliseconds);
+
         return result;
     }
+    public async Task<List<AccountDTO>> AccountsIDList(AccountQueryDTO accountQuery) =>
+        await _sqlDataAccess.LoadDataQuery<AccountDTO, dynamic>(
+        @"select m.MemName as MemberName,Replace(MainBookNo,'.','')+AccountNo as accountNumber,
+        isNUll(BranchID,'00') as branchCode  from DepositMaster d
+        join MemberDetail m on d.MemberNo = m.MemberNo
+        WHERE (@memberno IS NULL OR m.MemberNo = @memberno) AND
+        (@accountNumber IS NULL OR REPLACE(MainBookNo, '.', '') + d.AccountNo = @accountNumber) AND
+        (@mobileNumber IS NULL OR m.mobileno = @mobileNumber)", accountQuery);
 
 }

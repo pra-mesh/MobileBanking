@@ -5,9 +5,10 @@ namespace MobileBanking.Data.Repositories;
 public interface IAccountRepository
 {
     Task<int> AccountCount(string accountNo);
-    Task<List<AccountFullDetalDTO>> AllAccountFullDetails(AccountDetailPaged accountDetail);
+    Task<List<AccountDTO>> AccountsIDList(AccountQueryDTO accountQuery);
+    Task<List<AccountFullDetalDTO>> AllAccountFullDetails(AccountPagedQueryDTO accountDetail);
     Task<string> GetAccountBranch(string accountNO);
-    Task<int> GetAccountCount(AccountDetailPaged accountDetail);
+    Task<int> GetAccountCount(AccountQueryDTO accountDetail);
     Task<List<AccountDetailDTO>> GetAccountDetails(string accountno);
     Task<decimal> GetBalance(string accountNo);
     Task<decimal> GetDepBalance(string accountNo);

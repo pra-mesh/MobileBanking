@@ -14,6 +14,7 @@ public static class DataServiceCollectionExtensions
         services.AddScoped<IStatementRepository, StatementRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<ILoanRepository, LoanRepository>();
         return services;
     }
 }

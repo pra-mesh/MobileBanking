@@ -1,5 +1,5 @@
 ﻿namespace MobileBanking.Application.Models;
-public class BalanceInquiryModel
+public class AccountInquiryModel
 {
     public string branchId { get; init; } = "";
 

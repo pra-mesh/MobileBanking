@@ -1,5 +1,5 @@
 ﻿namespace MobileBanking.Application.Models;
-public class AllDetailsQueryModel
+public class AccountQueryModel
 {
     public string? MemberNo { get; set; }
     public string? AccountNumber { get; set; }

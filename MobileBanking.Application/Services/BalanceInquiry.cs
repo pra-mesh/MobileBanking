@@ -15,7 +15,7 @@ public class BalanceInquiry : IBalanceInquiry
         _account = account;
         _valid = valid;
     }
-    public async Task<AccountDetailModel> GetBalance(BalanceInquiryModel reqBalance)
+    public async Task<AccountDetailModel> GetBalance(AccountInquiryModel reqBalance)
     {
         _valid.InvalidAccount(reqBalance.accountNumber);
         var accounts = await _account.GetAccountDetails(reqBalance.accountNumber);
@@ -25,14 +25,14 @@ public class BalanceInquiry : IBalanceInquiry
 
     }
 
-    public async Task<List<AccountDetailFullModel>> GetAccountList(AllDetailsQueryModel req)
+    public async Task<List<AccountDetailFullModel>> GetAccountsDetailList(AccountQueryModel req)
     {
-        var query = BusinessToDataMapping.ToAccountDetailPagedDTO(req);
+        var query = BusinessToDataMapping.ToAccountQueryDTO(req);
         int count = await _account.GetAccountCount(query);
         var tasks = new List<Task<List<AccountFullDetalDTO>>>();
-        for (int i = 0; i < count / 2; i++)
+        for (int i = 0; i < Math.Ceiling((double)count / 2); i++)
         {
-            var pagedQuery = new AccountDetailPaged
+            var pagedQuery = new AccountPagedQueryDTO
             {
                 Offset = 2 * i,
                 Limit = 2,
@@ -45,5 +45,12 @@ public class BalanceInquiry : IBalanceInquiry
         var results = await Task.WhenAll(tasks);
         var allAccounts = results.SelectMany(r => r).ToList().Distinct();
         return allAccounts.Select(DataToBusinessMapping.ToAccountDetailFullModel).ToList();
+    }
+
+    public async Task<List<AccountModel>> GetAccounts(AccountQueryModel req)
+    {
+        var query = BusinessToDataMapping.ToAccountQueryDTO(req);
+        var result = await _account.AccountsIDList(query);
+        return result.Select(DataToBusinessMapping.ToAccountModel).ToList();
     }
 }

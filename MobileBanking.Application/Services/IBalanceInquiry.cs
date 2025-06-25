@@ -3,6 +3,7 @@
 namespace MobileBanking.Application.Services;
 public interface IBalanceInquiry
 {
-    Task<List<AccountDetailFullModel>> GetAccountList(AllDetailsQueryModel req);
-    Task<AccountDetailModel> GetBalance(BalanceInquiryModel reqBalance);
+    Task<List<AccountModel>> GetAccounts(AccountQueryModel req);
+    Task<List<AccountDetailFullModel>> GetAccountsDetailList(AccountQueryModel req);
+    Task<AccountDetailModel> GetBalance(AccountInquiryModel reqBalance);
 }

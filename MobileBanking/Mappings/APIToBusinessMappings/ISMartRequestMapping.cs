@@ -5,8 +5,8 @@ namespace MobileBanking.Mappings.APIToBusinessMappings;
 
 public static class ISMartRequestMapping
 {
-    public static BalanceInquiryModel ToBalanceInquiryRequest(BalanceInquiryRequest request) =>
-        new BalanceInquiryModel
+    public static AccountInquiryModel ToBalanceInquiryRequest(AccountInquiryRequest request) =>
+        new AccountInquiryModel
         {
             branchId = request.branchId,
             accountNumber = request.accountNumber
@@ -57,10 +57,15 @@ public static class ISMartRequestMapping
             BVRCNO = req.transactionIdentifier,
             Description = "Mobile Banking Reversed"
         };
-    public static AllDetailsQueryModel ToAllDetailsQueryModel(AccountDetailByIdRequest req) =>
-        new AllDetailsQueryModel
+    public static AccountQueryModel ToAllDetailsQueryModel(AccountDetailByIdRequest req) =>
+        new AccountQueryModel
+        {
+            MobileNumber = req.mobileNumber?.Trim() == "" ? null : req.mobileNumber,
+            AccountNumber = req.accountNumber?.Trim() == "" ? null : req.accountNumber,
+        };
+    public static AccountQueryModel ToAllDetailsQueryModelOnlyMobile(AccountByMobileNumberRequest req) =>
+        new AccountQueryModel
         {
             MobileNumber = req.mobileNumber,
-            AccountNumber = req.accountNumber,
         };
 }

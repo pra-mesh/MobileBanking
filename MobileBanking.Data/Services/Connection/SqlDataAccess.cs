@@ -20,9 +20,13 @@ public class SqlDataAccess : ISqlDataAccess
     {
         using (IDbConnection connection = new SqlConnection(_connectionString))
         {
+            //var start = DateTime.Now;
+            //var stopwatch = Stopwatch.StartNew();
+            //Console.WriteLine($"START at {DateTime.Now:HH:mm:ss.fff}");
             var rows = await connection.QueryAsync<T>(storeProcedure, parameters,
                  commandType: CommandType.StoredProcedure);
             List<T> data = rows.ToList();
+            //Console.WriteLine($"END:  at {DateTime.Now:HH:mm:ss.fff}, took {stopwatch.ElapsedMilliseconds} ms");
             return data;
         }
     }
@@ -30,9 +34,7 @@ public class SqlDataAccess : ISqlDataAccess
     {
         using (IDbConnection connection = new SqlConnection(_connectionString))
         {
-            Console.WriteLine(parameters.ToString());
             await connection.ExecuteAsync(storeProcedure, parameters, commandType: CommandType.StoredProcedure);
-
         }
     }
     public async Task<List<T>> LoadDataQuery<T, U>(string commandText, U parameters)
