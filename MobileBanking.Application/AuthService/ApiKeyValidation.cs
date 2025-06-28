@@ -1,5 +1,5 @@
 ﻿using Microsoft.Extensions.Configuration;
-using MobileBanking.Application.Constants;
+using MobileBanking.Data.Services.Connection;
 using MobileBanking.Logger.Services;
 
 namespace MobileBanking.Application.AuthService;
@@ -7,16 +7,18 @@ public class ApiKeyValidation : IApiKeyValidation
 {
     private readonly IConfiguration _configuration;
     private readonly ILoggerService _logger;
+    private readonly IBaseSqlConnection _baseSql;
 
-    public ApiKeyValidation(IConfiguration configuration, ILoggerService logger)
+    public ApiKeyValidation(IConfiguration configuration, ILoggerService logger, IBaseSqlConnection baseSql)
     {
         _configuration = configuration;
         _logger = logger;
+        _baseSql = baseSql;
     }
     public bool IsValidAPIKey(string userApiKey)
     {
-
-        var apiKey = _configuration.GetValue<string>(ApiKeyConstants.ApiKeyName);
+        var v = _baseSql.GetTenantInfo();
+        var apiKey = v.ApiKey;
         bool isValid = !string.IsNullOrWhiteSpace(userApiKey) && !string.IsNullOrWhiteSpace(apiKey)
             && apiKey == userApiKey;
         if (!isValid)

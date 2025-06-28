@@ -19,15 +19,20 @@ public class BaseSqlConnection : IBaseSqlConnection
 
     public string GetConnectionString()
     {
+        return BuildConnectionString(BaseConnectionString(), GetTenantInfo()).ToString();
+    }
+
+    private string BaseConnectionString()
+    {
         var connectionString = new SqlConnectionStringBuilder(Configuration.GetConnectionString("DbConnection"));
         connectionString.Password = Configuration.GetValue<string>("DbCredentials:Password");
         connectionString.UserID = Configuration.GetValue<string>("DbCredentials:userName");
-
-        return BuildConnectionString(connectionString.ToString(), GetTenantInfo(connectionString.ToString())).ToString();
+        return connectionString.ToString();
     }
 
-    private TenantModel GetTenantInfo(string connectionString)
+    public TenantModel GetTenantInfo()
     {
+        string connectionString = BaseConnectionString();
         using (IDbConnection connection = new SqlConnection(connectionString))
         {
             var tenant = connection.QueryFirstOrDefault<TenantModel>(
