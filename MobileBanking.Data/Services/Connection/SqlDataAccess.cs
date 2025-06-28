@@ -48,11 +48,11 @@ public class SqlDataAccess : ISqlDataAccess
         }
     }
 
-    public async Task<T> SingleDataQuery<T, U>(string commandText, U parameters)
+    public async Task<T?> SingleDataQuery<T, U>(string commandText, U parameters)
     {
         using (IDbConnection connection = new SqlConnection(_connectionString))
         {
-            return await connection.QueryFirstAsync<T>(commandText, parameters, commandType: CommandType.Text);
+            return await connection.QueryFirstOrDefaultAsync<T>(commandText, parameters, commandType: CommandType.Text);
         }
     }
 

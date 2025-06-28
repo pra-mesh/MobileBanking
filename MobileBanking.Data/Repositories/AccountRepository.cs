@@ -11,7 +11,7 @@ public class AccountRepository : IAccountRepository
     {
         _sqlDataAccess = sqlDataAccess;
     }
-
+    //TODO Get Baalance only
     public async Task<List<AccountDetailDTO>> GetAccountDetails(string accountNo)
     {
         return await _sqlDataAccess.LoadData<AccountDetailDTO, dynamic>("balancewithfullacno", new { accountNo });
@@ -33,11 +33,11 @@ public class AccountRepository : IAccountRepository
                 accountNo,
                 date
             });
-    public async Task<string> GetAccountBranch(string accountNO) =>
+    public async Task<string?> GetAccountBranch(string accountNO) =>
         await _sqlDataAccess.SingleDataQuery<string, dynamic>
         ("select top 1 branchId from Itms1 where REPLACE(acno,'.','')+Itemcode =@accountNO", new { accountNO });
 
-    public async Task<string> GetItemName(string fullAccountNo) => await _sqlDataAccess.SingleDataQuery<string, dynamic>
+    public async Task<string?> GetItemName(string fullAccountNo) => await _sqlDataAccess.SingleDataQuery<string, dynamic>
           ("select top 1 ITEMNAME from Itms1 where REPLACE(acno,'.','')" +
           "+ITEMCODE =@fullAccountNo",
           new { fullAccountNo });
@@ -51,12 +51,11 @@ public class AccountRepository : IAccountRepository
         WHERE (d.Disabled = 0 or d.Disabled is null) and (@memberno IS NULL OR m.MemberNo = @memberno) AND
         (@accountNumber IS NULL OR REPLACE(MainBookNo, '.', '') + d.AccountNo = @accountNumber) AND
         (@mobileNumber IS NULL OR m.mobileno = @mobileNumber)", accountDetail);
+
     public async Task<List<AccountFullDetalDTO>> AllAccountFullDetails(AccountPagedQueryDTO accountDetail)
     {
-
         var result = await _sqlDataAccess.LoadData<AccountFullDetalDTO, dynamic>("sp_GetDepositAccountDetails",
              accountDetail);
-
         return result;
     }
     public async Task<List<AccountDTO>> AccountsIDList(AccountQueryDTO accountQuery) =>

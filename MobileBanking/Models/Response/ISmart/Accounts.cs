@@ -2,7 +2,7 @@
 
 public class Accounts
 {
-    public required string memberName { get; init; }
-    public required string accountNumber { get; init; }
-    public string? branchCode { get; init; }
+    public required string MemberName { get; init; }
+    public required string AccountNumber { get; init; }
+    public string? BranchCode { get; init; }
 }

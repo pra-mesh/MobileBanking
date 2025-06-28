@@ -10,11 +10,14 @@ public static class DataServiceCollectionExtensions
     {
         services.AddScoped<IBaseSqlConnection, BaseSqlConnection>();
         services.AddScoped<ISqlDataAccess, SqlDataAccess>();
+
         services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IMemberDetailRepository, MemberDetailRepository>();
+        services.AddScoped<ILoanRepository, LoanRepository>();
         services.AddScoped<IStatementRepository, StatementRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<ILoanRepository, LoanRepository>();
+
         return services;
     }
 }

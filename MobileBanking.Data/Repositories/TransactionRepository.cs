@@ -43,12 +43,12 @@ public class TransactionRepository : ITransactionRepository
             SELECT CAST(SCOPE_IDENTITY() as int)";
     }
 
-    public async Task<TransactionStatusDTO> SearchTransactionByJournalNo(int journalNO) =>
+    public async Task<TransactionStatusDTO?> SearchTransactionByJournalNo(int journalNO) =>
          await _sqlDataAccess.SingleDataQuery<TransactionStatusDTO, dynamic>
         ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where journalno=@journalno",
             new { journalNO });
 
-    public async Task<TransactionStatusDTO> SearchTransactionByBVRCNO(string BVRCNO) =>
+    public async Task<TransactionStatusDTO?> SearchTransactionByBVRCNO(string BVRCNO) =>
        await _sqlDataAccess.SingleDataQuery<TransactionStatusDTO, dynamic>
        ("select top 1 BVRCNO, journalno, TransNoA from Maintransbook where BVRCNO=@BVRCNO order by journalno",
            new { BVRCNO });

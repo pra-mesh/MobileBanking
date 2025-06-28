@@ -3,6 +3,7 @@ public class LoanInfoDTO
 {
     public required string LoanType { get; set; }
     public required string AccountNumber { get; set; }
+    public required string Memberno { get; set; }
     public decimal InterestRate { get; set; }
     public string? IssuedOn { get; set; }
     public string? MaturesOn { get; set; }

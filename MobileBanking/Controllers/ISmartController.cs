@@ -16,17 +16,20 @@ public class ISmartController : ControllerBase
     private readonly IStatementServices _statementServices;
     private readonly ITransactionService _transactionService;
     private readonly ILoanServices _loanServices;
+    private readonly IMemberDetailService _memberDetailService;
 
     public ISmartController(
         IBalanceInquiry balanceInquiry,
         IStatementServices statementServices,
         ITransactionService transactionService,
-        ILoanServices loanServices)
+        ILoanServices loanServices,
+        IMemberDetailService memberDetailService)
     {
         _balanceInquiry = balanceInquiry;
         _statementServices = statementServices;
         _transactionService = transactionService;
         _loanServices = loanServices;
+        _memberDetailService = memberDetailService;
     }
 
     [HttpPost("BalanceInquiry")]
@@ -110,6 +113,7 @@ public class ISmartController : ControllerBase
     {
         var result = await _loanServices.LoanDetail
             (ISMartRequestMapping.ToBalanceInquiryRequest(req));
+
         return ISmartResponseMapping.ToLoanDetailResponse(result);
     }
 
@@ -124,6 +128,24 @@ public class ISmartController : ControllerBase
             StatementList = result.Select(ISmartResponseMapping.ToLoanFullStatement).ToList(),
         };
     }
-
-
+    //Todo: Aggregation is part of business layer
+    [HttpPost("memberActiveAccountList")]
+    public async Task<MemberDetailResponse> MemberDetail(MemberNoRequest req)
+    {
+        var shares = await _memberDetailService.MemberShares(req.memberID);
+        var depositAccounts = await _memberDetailService.MembersAccount(req.memberID);
+        var loans = await _loanServices.AllLoanInfo(req.memberID);
+        if (depositAccounts is null)
+            throw new AccountNotFoundException(req.memberID);
+        return new MemberDetailResponse
+        {
+            MemberName = depositAccounts.First().AccountHolderName,
+            Address = depositAccounts.First().Address,
+            MobileNumber = depositAccounts.First().MobileNumber,
+            Gender = depositAccounts.First().Gender,
+            ShareList = shares.Select(ISmartResponseMapping.ToShareDetail).ToList(),
+            LoanList = [.. loans.Select(ISmartResponseMapping.ToLoanDetailResponse)],
+            AccountList = [.. depositAccounts.Select(ISmartResponseMapping.ToDepositAcccouts)]
+        };
+    }
 }

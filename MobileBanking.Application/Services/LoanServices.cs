@@ -14,6 +14,7 @@ public class LoanServices : ILoanServices
     public async Task<LoanInfoModel> LoanDetail(AccountInquiryModel inquiry)
     {
         var result = await _loanRepository.LoanInfo(inquiry.accountNumber);
+
         if (result == null)
         {
             throw new AccountNotFoundException(inquiry.accountNumber);
@@ -24,5 +25,10 @@ public class LoanServices : ILoanServices
     {
         var result = await _loanRepository.LoanStatements(statement.accountNumber, statement.fromDate, statement.toDate);
         return result.Select(DataToBusinessMapping.ToLoanStatement).ToList();
+    }
+    public async Task<List<LoanInfoModel>> AllLoanInfo(string Memberno)
+    {
+        var result = await _loanRepository.AllLoanInfo(Memberno);
+        return [.. result.Select(DataToBusinessMapping.ToLoanInfoModel)];   //using collection expression
     }
 }

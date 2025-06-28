@@ -49,14 +49,14 @@ public class AccountValidation : IAccountValidation
 
 
     }
-    public async Task<string> GetBranch(string accountNO) => await _account.GetAccountBranch(accountNO);
+    public async Task<string?> GetBranch(string accountNO) => await _account.GetAccountBranch(accountNO);
     public async Task<AccountIdentifier> AccountStructure(string accountNO) =>
         new AccountIdentifier
         {
             Mano = accountNO.Substring(0, 3),
             Acno = $"{accountNO.Substring(0, 3)}.{accountNO.Substring(3, 2)}",
             ItemCode = accountNO.Substring(5),
-            ItemName = await _account.GetItemName(accountNO)
+            ItemName = await _account.GetItemName(accountNO) ?? "",
         };
     public void AccountCountValidation(List<AccountDetailDTO> accounts, string accountNo)
     {

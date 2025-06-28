@@ -13,10 +13,12 @@ public static class ApplicationServiceCollection
         services.AddScoped<IApiKeyValidation, ApiKeyValidation>();
         services.AddScoped<IAccountValidation, AccountValidation>();
         services.AddScoped<IBalanceInquiry, BalanceInquiry>();
+        services.AddScoped<ILoanServices, LoanServices>();
+        services.AddScoped<IMemberDetailService, MemberDetailService>();
         services.AddScoped<IStatementServices, StatementServices>();
         services.AddScoped<ITenantProvider, TenantProvider>();
         services.AddScoped<ITransactionService, TransactionService>();
-        services.AddScoped<ILoanServices, LoanServices>();
+
         services.AddDataServices();
         return services;
     }

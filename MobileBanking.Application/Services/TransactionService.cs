@@ -47,11 +47,18 @@ public class TransactionService : ITransactionService
     public async Task<TransactionStatusModel> FundTransferStatus(TranactionStatusInquiryModel req)
     {
         if (req.JournalNo != 0)
-            return DataToBusinessMapping.ToFundTransferedModel
-                (await _transaction.SearchTransactionByJournalNo(req.JournalNo));
+        {
+            var result = await _transaction.SearchTransactionByJournalNo(req.JournalNo);
+            if (result == null) throw new Exception("Unable To Process [Transaction not found]");
+            return DataToBusinessMapping.ToFundTransferedModel(result);
+        }
         if (!string.IsNullOrEmpty(req.BVRCNO))
+        {
+            var result = await _transaction.SearchTransactionByBVRCNO(req.BVRCNO);
+            if (result == null) throw new Exception("Unable To Process [Transaction not found]");
             return DataToBusinessMapping.ToFundTransferedModel
-                (await _transaction.SearchTransactionByBVRCNO(req.BVRCNO));
+                (result);
+        }
         throw new Exception("System Error [Transaction not found]");
     }
     public async Task<ReversalStatusModel> TransactionReversal(ReversalRequestModel req)

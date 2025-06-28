@@ -67,11 +67,11 @@ public static class ISmartResponseMapping
         new AccountFullDetail
         {
             memberId = model.MemberId,
-            memberName = model.AccountHolderName,
+            MemberName = model.AccountHolderName,
             address = model.Address,
             mobileNumber = model.MobileNumber,
-            accountNumber = model.AccountNumber,
-            branchCode = model.BranchCode,
+            AccountNumber = model.AccountNumber,
+            BranchCode = model.BranchCode,
             isActive = model.IsActive,
             dateOfBirth = model.DateOfBirth,
             gender = model.Gender,
@@ -89,9 +89,9 @@ public static class ISmartResponseMapping
     public static Accounts ToAccounts(AccountModel model) =>
         new Accounts
         {
-            accountNumber = model.AccountNumber,
-            memberName = model.AccountHolderName,
-            branchCode = model.BranchCode,
+            AccountNumber = model.AccountNumber,
+            MemberName = model.AccountHolderName,
+            BranchCode = model.BranchCode,
         };
     public static LoanDetailResponse ToLoanDetailResponse(LoanInfoModel model) =>
         new LoanDetailResponse
@@ -120,5 +120,25 @@ public static class ISmartResponseMapping
             Discount = model.Discount,
             Balance = model.Balance,
         };
+    public static ShareDetail ToShareDetail(ShareModel shareModel) =>
+        new ShareDetail
+        {
+            MemberID = shareModel.MemberID,
+            OpenDate = shareModel.OpenDate,
+            Balance = shareModel.Balance,
+            KittaNumber = shareModel.KittaNumber,
+        };
 
+    public static DepositAcccouts ToDepositAcccouts(AccountDetailFullModel model) =>
+      new DepositAcccouts
+      {
+          AccountNumber = model.AccountNumber,
+          BranchCode = model.BranchCode,
+          IsActive = model.IsActive,
+          AccruedInterest = model.AccruedInterest,
+          InterestRate = model.InterestRate,
+          AccountType = model.AccountType,
+          AvailableBalance = model.AvailableBalance,
+          MinimumBalance = model.MinBal,
+      };
 }

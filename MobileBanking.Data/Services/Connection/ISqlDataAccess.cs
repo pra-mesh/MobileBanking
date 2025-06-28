@@ -11,6 +11,6 @@ public interface ISqlDataAccess : IDisposable
     Task<int> SaveDataScalarTransaction<T>(string commantText, T parameters);
     Task SaveDataTransactionProcedure<T>(string stroreProcedure, T parameters);
     Task SaveDataTransactionQuery<T>(string commandText, T parameters);
-    Task<T> SingleDataQuery<T, U>(string commandText, U parameters);
+    Task<T?> SingleDataQuery<T, U>(string commandText, U parameters);
     void StartTransaction();
 }

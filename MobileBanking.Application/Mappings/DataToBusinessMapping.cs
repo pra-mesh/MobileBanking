@@ -116,6 +116,7 @@ internal static class DataToBusinessMapping
         {
             LoanType = dto.LoanType,
             AccountNumber = dto.AccountNumber,
+            MemberID = dto.Memberno,
             InterestRate = dto.InterestRate,
             IssuedOn = dto.IssuedOn,
             MaturesOn = dto.MaturesOn,
@@ -140,5 +141,14 @@ internal static class DataToBusinessMapping
             Fine = dto.Fine,
             Discount = dto.Discount,
             Balance = dto.Balance
+        };
+
+    public static ShareModel ToShareModel(ShareDTO dto) =>
+        new ShareModel
+        {
+            MemberID = dto.MemberCode,
+            OpenDate = dto.OpenDate,
+            Balance = dto.Balance,
+            KittaNumber = dto.KittaNumber
         };
 }
