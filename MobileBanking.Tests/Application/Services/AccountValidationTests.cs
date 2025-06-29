@@ -22,39 +22,47 @@ public class AccountValidationTests
     [InlineData("12345")]
     [InlineData("1234")]
     [InlineData("123")]
-    public async Task IsSingleAccount_WithShortAccountNumber_ShouldThrowAccountNotFoundException(string accountNo)
+    [InlineData("")]
+    public async Task IsSingleAccount_WithShortAccountNumbers_ShouldThrowAccountNotFoundException(string accountNo)
     {
         // Act & Assert
         await Assert.ThrowsAsync<AccountNotFoundException>(() => _accountValidation.IsSingleAccount(accountNo));
     }
 
-    [Fact]
-    public async Task IsSingleAccount_WithZeroAccountCount_ShouldThrowAccountNotFoundException()
+    [Theory]
+    [InlineData("123456", 0)]
+    [InlineData("654321", -1)]
+    public async Task IsSingleAccount_WithZeroOrNegativeAccountCount_ShouldThrowAccountNotFoundException(
+        string accountNo, int accountCount)
     {
         // Arrange
-        var accountNo = "123456";
-        _mockAccountRepository.Setup(x => x.AccountCount(accountNo)).ReturnsAsync(0);
+        _mockAccountRepository.Setup(x => x.AccountCount(accountNo)).ReturnsAsync(accountCount);
 
         // Act & Assert
         await Assert.ThrowsAsync<AccountNotFoundException>(() => _accountValidation.IsSingleAccount(accountNo));
     }
 
-    [Fact]
-    public async Task IsSingleAccount_WithMultipleAccounts_ShouldThrowMultipleAccountsFoundException()
+    [Theory]
+    [InlineData("123456", 2)]
+    [InlineData("654321", 5)]
+    [InlineData("789012", 10)]
+    public async Task IsSingleAccount_WithMultipleAccounts_ShouldThrowMultipleAccountsFoundException(
+        string accountNo, int accountCount)
     {
         // Arrange
-        var accountNo = "123456";
-        _mockAccountRepository.Setup(x => x.AccountCount(accountNo)).ReturnsAsync(2);
+        _mockAccountRepository.Setup(x => x.AccountCount(accountNo)).ReturnsAsync(accountCount);
 
         // Act & Assert
         await Assert.ThrowsAsync<MultipleAccountsFoundException>(() => _accountValidation.IsSingleAccount(accountNo));
     }
 
-    [Fact]
-    public async Task IsSingleAccount_WithSingleAccount_ShouldNotThrow()
+    [Theory]
+    [InlineData("123456")]
+    [InlineData("654321")]
+    [InlineData("789012")]
+    public async Task IsSingleAccount_WithSingleAccount_ShouldNotThrow(string accountNo)
     {
         // Arrange
-        var accountNo = "123456";
         _mockAccountRepository.Setup(x => x.AccountCount(accountNo)).ReturnsAsync(1);
 
         // Act & Assert
@@ -66,12 +74,22 @@ public class AccountValidationTests
     [InlineData("010123456", true, 1000, 500, false)] // Credit account, debit transaction, insufficient balance
     [InlineData("010123456", false, 1000, 1500, true)] // Credit account, credit transaction, sufficient balance
     [InlineData("110123456", true, 1000, 500, true)] // Debit account, debit transaction, sufficient balance
-    public async Task HasSufficientBalance_ShouldReturnExpectedResult(
+    [InlineData("020123456", true, 2000, 1500, true)] // Credit account, debit transaction, sufficient balance
+    [InlineData("030123456", true, 5000, 1000, true)] // Deposit account, debit transaction, sufficient balance
+    public async Task HasSufficientBalance_WithVariousScenarios_ShouldReturnExpectedResult(
         string accountNo, bool isDebit, decimal balance, decimal transactionAmount, bool expectedResult)
     {
         // Arrange
         _mockAccountRepository.Setup(x => x.AccountCount(accountNo)).ReturnsAsync(1);
-        _mockAccountRepository.Setup(x => x.GetBalance(accountNo)).ReturnsAsync(balance);
+        
+        if (accountNo.StartsWith("030"))
+        {
+            _mockAccountRepository.Setup(x => x.GetDepBalance(accountNo)).ReturnsAsync(balance);
+        }
+        else
+        {
+            _mockAccountRepository.Setup(x => x.GetBalance(accountNo)).ReturnsAsync(balance);
+        }
 
         // Act
         if (expectedResult)
@@ -86,12 +104,15 @@ public class AccountValidationTests
         }
     }
 
-    [Fact]
-    public async Task GetBranch_ShouldReturnBranchId()
+    [Theory]
+    [InlineData("123456", "01")]
+    [InlineData("654321", "02")]
+    [InlineData("789012", "00")]
+    [InlineData("111111", "03")]
+    public async Task GetBranch_WithVariousAccounts_ShouldReturnExpectedBranchId(
+        string accountNo, string expectedBranch)
     {
         // Arrange
-        var accountNo = "123456";
-        var expectedBranch = "01";
         _mockAccountRepository.Setup(x => x.GetAccountBranch(accountNo)).ReturnsAsync(expectedBranch);
 
         // Act
@@ -101,29 +122,45 @@ public class AccountValidationTests
         result.Should().Be(expectedBranch);
     }
 
-    [Fact]
-    public async Task AccountStructure_ShouldReturnCorrectStructure()
+    [Theory]
+    [InlineData("123456789", "Savings Account")]
+    [InlineData("030123456", "Deposit Account")]
+    [InlineData("110654321", "Loan Account")]
+    public async Task AccountStructure_WithVariousAccounts_ShouldReturnCorrectStructure(
+        string accountNo, string expectedItemName)
     {
         // Arrange
-        var accountNo = "123456789";
-        var expectedItemName = "Test Item";
         _mockAccountRepository.Setup(x => x.GetItemName(accountNo)).ReturnsAsync(expectedItemName);
 
         // Act
         var result = await _accountValidation.AccountStructure(accountNo);
 
         // Assert
-        result.Mano.Should().Be("123");
-        result.Acno.Should().Be("123.45");
-        result.ItemCode.Should().Be("6789");
+        result.Mano.Should().Be(accountNo.Substring(0, 3));
+        result.Acno.Should().Be($"{accountNo.Substring(0, 3)}.{accountNo.Substring(3, 2)}");
+        result.ItemCode.Should().Be(accountNo.Substring(5));
         result.ItemName.Should().Be(expectedItemName);
     }
 
-    [Fact]
-    public void AccountCountValidation_WithNoAccounts_ShouldThrowAccountNotFoundException()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(-1)]
+    public void AccountCountValidation_WithNoOrNegativeAccounts_ShouldThrowAccountNotFoundException(int accountCount)
     {
         // Arrange
         var accounts = new List<AccountDetailDTO>();
+        for (int i = 0; i < Math.Max(0, accountCount); i++)
+        {
+            accounts.Add(new AccountDetailDTO 
+            { 
+                SavingName = "Test", 
+                mainbookno = "123", 
+                acno = "456", 
+                AccountHolder = "Test", 
+                accountno = "789", 
+                MemName = "Test" 
+            });
+        }
         var accountNo = "123456";
 
         // Act & Assert
@@ -131,15 +168,26 @@ public class AccountValidationTests
             _accountValidation.AccountCountValidation(accounts, accountNo));
     }
 
-    [Fact]
-    public void AccountCountValidation_WithMultipleAccounts_ShouldThrowMultipleAccountsFoundException()
+    [Theory]
+    [InlineData(2)]
+    [InlineData(5)]
+    [InlineData(10)]
+    public void AccountCountValidation_WithMultipleAccounts_ShouldThrowMultipleAccountsFoundException(int accountCount)
     {
         // Arrange
-        var accounts = new List<AccountDetailDTO>
+        var accounts = new List<AccountDetailDTO>();
+        for (int i = 0; i < accountCount; i++)
         {
-            new() { SavingName = "Test1", mainbookno = "123", acno = "456", AccountHolder = "Test", accountno = "789", MemName = "Test" },
-            new() { SavingName = "Test2", mainbookno = "123", acno = "456", AccountHolder = "Test", accountno = "789", MemName = "Test" }
-        };
+            accounts.Add(new AccountDetailDTO 
+            { 
+                SavingName = $"Test{i}", 
+                mainbookno = "123", 
+                acno = "456", 
+                AccountHolder = "Test", 
+                accountno = "789", 
+                MemName = "Test" 
+            });
+        }
         var accountNo = "123456";
 
         // Act & Assert
@@ -151,20 +199,45 @@ public class AccountValidationTests
     [InlineData("12345")]
     [InlineData("1234")]
     [InlineData("")]
-    public void InvalidAccount_WithInvalidAccountNumber_ShouldThrowInvalidAccountException(string accountNo)
+    [InlineData("1")]
+    public void InvalidAccount_WithInvalidAccountNumbers_ShouldThrowInvalidAccountException(string accountNo)
     {
         // Act & Assert
         Assert.Throws<InvalidAccountException>(() => _accountValidation.InvalidAccount(accountNo));
     }
 
-    [Fact]
-    public void InvalidAccount_WithValidAccountNumber_ShouldNotThrow()
+    [Theory]
+    [InlineData("123456")]
+    [InlineData("1234567")]
+    [InlineData("12345678901234567890")]
+    public void InvalidAccount_WithValidAccountNumbers_ShouldNotThrow(string accountNo)
     {
-        // Arrange
-        var accountNo = "123456";
-
         // Act & Assert
         _accountValidation.Invoking(x => x.InvalidAccount(accountNo))
             .Should().NotThrow();
+    }
+
+    [Theory]
+    [InlineData("030123456", 5000.50)]
+    [InlineData("110654321", 1500.25)]
+    [InlineData("020789012", 10000.00)]
+    public async Task GeBalance_WithVariousAccountTypes_ShouldReturnCorrectBalance(
+        string accountNo, decimal expectedBalance)
+    {
+        // Arrange
+        if (accountNo.StartsWith("030"))
+        {
+            _mockAccountRepository.Setup(x => x.GetDepBalance(accountNo)).ReturnsAsync(expectedBalance);
+        }
+        else
+        {
+            _mockAccountRepository.Setup(x => x.GetBalance(accountNo)).ReturnsAsync(expectedBalance);
+        }
+
+        // Act
+        var result = await _accountValidation.GeBalance(accountNo);
+
+        // Assert
+        result.Should().Be(expectedBalance);
     }
 }

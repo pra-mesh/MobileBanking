@@ -18,37 +18,32 @@ public class StatementRepositoryTests
         _statementRepository = new StatementRepository(_mockSqlDataAccess.Object);
     }
 
-    [Fact]
-    public async Task FullStatement_WithValidParameters_ShouldReturnFullStatements()
+    [Theory]
+    [InlineData("123456", 30, 2)]
+    [InlineData("654321", 7, 5)]
+    [InlineData("789012", 90, 10)]
+    [InlineData("111111", 1, 1)]
+    public async Task FullStatement_WithVariousDateRanges_ShouldReturnExpectedStatements(
+        string accountNo, int daysBack, int expectedCount)
     {
         // Arrange
-        var accountNo = "123456";
-        var fromDate = DateTime.Now.AddDays(-30);
+        var fromDate = DateTime.Now.AddDays(-daysBack);
         var toDate = DateTime.Now;
 
-        var expectedStatements = new List<FullStatementDTO>
+        var expectedStatements = new List<FullStatementDTO>();
+        for (int i = 0; i < expectedCount; i++)
         {
-            new()
+            expectedStatements.Add(new FullStatementDTO
             {
-                JournalNo = 12345,
-                Date = DateTime.Now.AddDays(-1),
-                Miti = "2081/01/01",
-                Description = "Deposit",
-                Amount = 1000m,
-                Type = "Credit",
-                Balance = 1000m
-            },
-            new()
-            {
-                JournalNo = 12346,
-                Date = DateTime.Now.AddDays(-2),
-                Miti = "2080/12/30",
-                Description = "Withdrawal",
-                Amount = 500m,
-                Type = "Debit",
-                Balance = 500m
-            }
-        };
+                JournalNo = 12345 + i,
+                Date = DateTime.Now.AddDays(-i - 1),
+                Miti = $"2081/01/{i + 1:00}",
+                Description = $"Transaction {i + 1}",
+                Amount = (i + 1) * 100m,
+                Type = i % 2 == 0 ? "Credit" : "Debit",
+                Balance = (i + 1) * 100m
+            });
+        }
 
         _mockSqlDataAccess.Setup(x => x.LoadData<FullStatementDTO, dynamic>(
             "SP_MBFullStatment", 
@@ -60,14 +55,13 @@ public class StatementRepositoryTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result.First().Description.Should().Be("Deposit");
-        result.First().Amount.Should().Be(1000m);
-        result.First().Type.Should().Be("Credit");
+        result.Should().HaveCount(expectedCount);
         
-        result.Last().Description.Should().Be("Withdrawal");
-        result.Last().Amount.Should().Be(500m);
-        result.Last().Type.Should().Be("Debit");
+        if (expectedCount > 0)
+        {
+            result.First().Description.Should().Be("Transaction 1");
+            result.First().Amount.Should().Be(100m);
+        }
 
         _mockSqlDataAccess.Verify(x => x.LoadData<FullStatementDTO, dynamic>(
             "SP_MBFullStatment", 
@@ -77,43 +71,28 @@ public class StatementRepositoryTests
                 p.GetType().GetProperty("toDate")!.GetValue(p)!.Equals(toDate))), Times.Once);
     }
 
-    [Fact]
-    public async Task MiniStatement_WithValidParameters_ShouldReturnMiniStatements()
+    [Theory]
+    [InlineData("123456", 5, 3)]
+    [InlineData("654321", 10, 7)]
+    [InlineData("789012", 1, 1)]
+    [InlineData("111111", 0, 0)]
+    public async Task MiniStatement_WithVariousTransactionCounts_ShouldReturnExpectedStatements(
+        string accountNo, int noOfTransaction, int expectedCount)
     {
         // Arrange
-        var accountNo = "123456";
-        var noOfTransaction = 5;
-
-        var expectedStatements = new List<MiniStatementDTO>
+        var expectedStatements = new List<MiniStatementDTO>();
+        for (int i = 0; i < expectedCount; i++)
         {
-            new()
+            expectedStatements.Add(new MiniStatementDTO
             {
-                JournalNo = 12345,
-                Date = DateTime.Now.AddDays(-1),
-                Miti = "2081/01/01",
-                Description = "Deposit",
-                Amount = 1000m,
-                Type = "Credit"
-            },
-            new()
-            {
-                JournalNo = 12346,
-                Date = DateTime.Now.AddDays(-2),
-                Miti = "2080/12/30",
-                Description = "Withdrawal",
-                Amount = 500m,
-                Type = "Debit"
-            },
-            new()
-            {
-                JournalNo = 12347,
-                Date = DateTime.Now.AddDays(-3),
-                Miti = "2080/12/29",
-                Description = "Transfer",
-                Amount = 200m,
-                Type = "Debit"
-            }
-        };
+                JournalNo = 12345 + i,
+                Date = DateTime.Now.AddDays(-i - 1),
+                Miti = $"2081/01/{i + 1:00}",
+                Description = $"Transaction {i + 1}",
+                Amount = (i + 1) * 100m,
+                Type = i % 2 == 0 ? "Credit" : "Debit"
+            });
+        }
 
         _mockSqlDataAccess.Setup(x => x.LoadData<MiniStatementDTO, dynamic>(
             "SP_MBMiniStatment", 
@@ -125,14 +104,14 @@ public class StatementRepositoryTests
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(3);
-        result.First().Description.Should().Be("Deposit");
-        result.First().Amount.Should().Be(1000m);
-        result.First().Type.Should().Be("Credit");
+        result.Should().HaveCount(expectedCount);
         
-        result.Skip(1).First().Description.Should().Be("Withdrawal");
-        result.Skip(1).First().Amount.Should().Be(500m);
-        result.Skip(1).First().Type.Should().Be("Debit");
+        if (expectedCount > 0)
+        {
+            result.First().Description.Should().Be("Transaction 1");
+            result.First().Amount.Should().Be(100m);
+            result.First().Type.Should().Be("Credit");
+        }
 
         _mockSqlDataAccess.Verify(x => x.LoadData<MiniStatementDTO, dynamic>(
             "SP_MBMiniStatment", 
@@ -141,12 +120,15 @@ public class StatementRepositoryTests
                 p.GetType().GetProperty("noOfTransaction")!.GetValue(p)!.Equals(noOfTransaction))), Times.Once);
     }
 
-    [Fact]
-    public async Task FullStatement_WithNoTransactions_ShouldReturnEmptyList()
+    [Theory]
+    [InlineData("999999", 30)]
+    [InlineData("888888", 7)]
+    [InlineData("777777", 90)]
+    public async Task FullStatement_WithNonExistentAccounts_ShouldReturnEmptyList(
+        string accountNo, int daysBack)
     {
         // Arrange
-        var accountNo = "999999";
-        var fromDate = DateTime.Now.AddDays(-30);
+        var fromDate = DateTime.Now.AddDays(-daysBack);
         var toDate = DateTime.Now;
         var emptyList = new List<FullStatementDTO>();
 
@@ -163,12 +145,14 @@ public class StatementRepositoryTests
         result.Should().BeEmpty();
     }
 
-    [Fact]
-    public async Task MiniStatement_WithNoTransactions_ShouldReturnEmptyList()
+    [Theory]
+    [InlineData("999999", 5)]
+    [InlineData("888888", 10)]
+    [InlineData("777777", 1)]
+    public async Task MiniStatement_WithNonExistentAccounts_ShouldReturnEmptyList(
+        string accountNo, int noOfTransaction)
     {
         // Arrange
-        var accountNo = "999999";
-        var noOfTransaction = 5;
         var emptyList = new List<MiniStatementDTO>();
 
         _mockSqlDataAccess.Setup(x => x.LoadData<MiniStatementDTO, dynamic>(
@@ -219,32 +203,6 @@ public class StatementRepositoryTests
         result.Should().HaveCount(1);
         result.First().Description.Should().Be("Opening Balance");
         result.First().Balance.Should().Be(1000m);
-    }
-
-    [Fact]
-    public async Task MiniStatement_WithZeroTransactionCount_ShouldCallWithZero()
-    {
-        // Arrange
-        var accountNo = "123456";
-        var noOfTransaction = 0;
-        var emptyList = new List<MiniStatementDTO>();
-
-        _mockSqlDataAccess.Setup(x => x.LoadData<MiniStatementDTO, dynamic>(
-            "SP_MBMiniStatment", 
-            It.IsAny<object>()))
-            .ReturnsAsync(emptyList);
-
-        // Act
-        var result = await _statementRepository.MiniStatement(accountNo, noOfTransaction);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
-        
-        _mockSqlDataAccess.Verify(x => x.LoadData<MiniStatementDTO, dynamic>(
-            "SP_MBMiniStatment", 
-            It.Is<object>(p => 
-                p.GetType().GetProperty("noOfTransaction")!.GetValue(p)!.Equals(0))), Times.Once);
     }
 
     [Fact]

@@ -20,19 +20,21 @@ public class TransactionRepositoryTests
         _transactionRepository = new TransactionRepository(_mockSqlDataAccess.Object);
     }
 
-    [Fact]
-    public async Task GenerateJournalNoAsync_WithValidJournal_ShouldReturnJournalNumber()
+    [Theory]
+    [InlineData("Test Transaction 1", "01", "TestUser1", 12345)]
+    [InlineData("Test Transaction 2", "02", "TestUser2", 12346)]
+    [InlineData("Test Transaction 3", "00", "TestUser3", 12347)]
+    public async Task GenerateJournalNoAsync_WithVariousJournals_ShouldReturnJournalNumber(
+        string description, string branchId, string user, int expectedJournalNo)
     {
         // Arrange
         var journal = new JournalNoDTO
         {
             tdate = DateTime.Now,
-            description = "Test Transaction",
-            branchId = "01",
-            user = "TestUser"
+            description = description,
+            branchId = branchId,
+            user = user
         };
-
-        var expectedJournalNo = 12345;
 
         _mockSqlDataAccess.Setup(x => x.SaveDataTransactionProcedure("sp_GetJournalno", It.IsAny<DynamicParameters>()))
             .Callback<string, DynamicParameters>((proc, param) =>
@@ -50,19 +52,22 @@ public class TransactionRepositoryTests
         _mockSqlDataAccess.Verify(x => x.SaveDataTransactionProcedure("sp_GetJournalno", It.IsAny<DynamicParameters>()), Times.Once);
     }
 
-    [Fact]
-    public async Task GetTransNoAsync_WithValidTransaction_ShouldReturnTransactionNumber()
+    [Theory]
+    [InlineData("TXN001", "TestUser1", 67890)]
+    [InlineData("TXN002", "TestUser2", 67891)]
+    [InlineData("TXN003", "TestUser3", 67892)]
+    [InlineData("", "TestUser4", 0)]
+    public async Task GetTransNoAsync_WithVariousTransactions_ShouldReturnTransactionNumber(
+        string ttid, string enteredBy, int expectedTransNo)
     {
         // Arrange
         var transactionData = new TransactionDTO
         {
             TransDate = DateTime.Now,
             TrDesc = "Test Transaction",
-            TTID = "TXN001",
-            EnteredBy = "TestUser"
+            TTID = ttid,
+            EnteredBy = enteredBy
         };
-
-        var expectedTransNo = 67890;
 
         _mockSqlDataAccess.Setup(x => x.SaveDataScalarTransaction<dynamic>(It.IsAny<string>(), transactionData))
             .ReturnsAsync(expectedTransNo);
@@ -75,23 +80,27 @@ public class TransactionRepositoryTests
         _mockSqlDataAccess.Verify(x => x.SaveDataScalarTransaction<dynamic>(It.IsAny<string>(), transactionData), Times.Once);
     }
 
-    [Fact]
-    public async Task InsertTransactionAsync_WithValidData_ShouldInsertTransaction()
+    [Theory]
+    [InlineData(12345, "TXN001", "DR", 1000, 0)]
+    [InlineData(12346, "TXN002", "CR", 0, 1500)]
+    [InlineData(12347, "TXN003", "DR", 500, 0)]
+    public async Task InsertTransactionAsync_WithVariousTransactionData_ShouldInsertTransaction(
+        int journalNo, string bvrcno, string drCr, decimal debit, decimal credit)
     {
         // Arrange
         var transactionData = new TransactionDataDTO
         {
-            Journalno = 12345,
-            BVRCNO = "TXN001",
+            Journalno = journalNo,
+            BVRCNO = bvrcno,
             transDate = DateTime.Now,
             branchid = "01",
             mano = "030",
             acno = "030.01",
             itemcode = "123456",
             itemname = "Test Account",
-            dr_cr = "DR",
-            Debit = 1000m,
-            Credit = 0m,
+            dr_cr = drCr,
+            Debit = debit,
+            Credit = credit,
             EnteredBy = "TestUser"
         };
 
@@ -107,16 +116,19 @@ public class TransactionRepositoryTests
             transactionData), Times.Once);
     }
 
-    [Fact]
-    public async Task SearchTransactionByJournalNo_WithValidJournalNo_ShouldReturnTransactionStatus()
+    [Theory]
+    [InlineData(12345, "TXN001", 67890)]
+    [InlineData(12346, "TXN002", 67891)]
+    [InlineData(0, "", 0)] // Non-existent journal
+    public async Task SearchTransactionByJournalNo_WithVariousJournalNumbers_ShouldReturnExpectedStatus(
+        int journalNo, string expectedBvrcno, int expectedTransNoA)
     {
         // Arrange
-        var journalNo = 12345;
         var expectedStatus = new TransactionStatusDTO
         {
-            BVRCNO = "TXN001",
-            Journalno = 12345,
-            TransNoA = 67890
+            BVRCNO = expectedBvrcno,
+            Journalno = journalNo,
+            TransNoA = expectedTransNoA
         };
 
         _mockSqlDataAccess.Setup(x => x.SingleDataQuery<TransactionStatusDTO, dynamic>(
@@ -129,25 +141,28 @@ public class TransactionRepositoryTests
 
         // Assert
         result.Should().NotBeNull();
-        result.BVRCNO.Should().Be("TXN001");
-        result.Journalno.Should().Be(12345);
-        result.TransNoA.Should().Be(67890);
+        result.BVRCNO.Should().Be(expectedBvrcno);
+        result.Journalno.Should().Be(journalNo);
+        result.TransNoA.Should().Be(expectedTransNoA);
 
         _mockSqlDataAccess.Verify(x => x.SingleDataQuery<TransactionStatusDTO, dynamic>(
             It.IsAny<string>(),
             It.Is<object>(p => p.GetType().GetProperty("journalNO")!.GetValue(p)!.Equals(journalNo))), Times.Once);
     }
 
-    [Fact]
-    public async Task SearchTransactionByBVRCNO_WithValidBVRCNO_ShouldReturnTransactionStatus()
+    [Theory]
+    [InlineData("TXN001", 12345, 67890)]
+    [InlineData("TXN002", 12346, 67891)]
+    [InlineData("NONEXISTENT", 0, 0)]
+    public async Task SearchTransactionByBVRCNO_WithVariousBVRCNOs_ShouldReturnExpectedStatus(
+        string bvrcno, int expectedJournalNo, int expectedTransNoA)
     {
         // Arrange
-        var bvrcno = "TXN001";
         var expectedStatus = new TransactionStatusDTO
         {
-            BVRCNO = "TXN001",
-            Journalno = 12345,
-            TransNoA = 67890
+            BVRCNO = bvrcno,
+            Journalno = expectedJournalNo,
+            TransNoA = expectedTransNoA
         };
 
         _mockSqlDataAccess.Setup(x => x.SingleDataQuery<TransactionStatusDTO, dynamic>(
@@ -160,36 +175,41 @@ public class TransactionRepositoryTests
 
         // Assert
         result.Should().NotBeNull();
-        result.BVRCNO.Should().Be("TXN001");
-        result.Journalno.Should().Be(12345);
-        result.TransNoA.Should().Be(67890);
+        result.BVRCNO.Should().Be(bvrcno);
+        result.Journalno.Should().Be(expectedJournalNo);
+        result.TransNoA.Should().Be(expectedTransNoA);
 
         _mockSqlDataAccess.Verify(x => x.SingleDataQuery<TransactionStatusDTO, dynamic>(
             It.IsAny<string>(),
             It.Is<object>(p => p.GetType().GetProperty("BVRCNO")!.GetValue(p)!.Equals(bvrcno))), Times.Once);
     }
 
-    [Fact]
-    public async Task JournalnosByBVRCNO_WithValidBVRCNO_ShouldReturnJournalNumbers()
+    [Theory]
+    [InlineData("TXN001", "TestUser1", new[] { "12345", "12346" })]
+    [InlineData("TXN002", "TestUser2", new[] { "12347" })]
+    [InlineData("NONEXISTENT", "TestUser3", new string[0])]
+    public async Task JournalnosByBVRCNO_WithVariousBVRCNOs_ShouldReturnExpectedJournalNumbers(
+        string bvrcno, string enteredBy, string[] expectedJournalNos)
     {
         // Arrange
-        var bvrcno = "TXN001";
-        var enteredBy = "TestUser";
-        var expectedJournalNos = new List<string> { "12345", "12346" };
+        var expectedJournalNosList = expectedJournalNos.ToList();
 
         _mockSqlDataAccess.Setup(x => x.LoadDataQuery<string, dynamic>(
             It.IsAny<string>(),
             It.IsAny<object>()))
-            .ReturnsAsync(expectedJournalNos);
+            .ReturnsAsync(expectedJournalNosList);
 
         // Act
         var result = await _transactionRepository.JournalnosByBVRCNO(bvrcno, enteredBy);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(2);
-        result.Should().Contain("12345");
-        result.Should().Contain("12346");
+        result.Should().HaveCount(expectedJournalNos.Length);
+        
+        foreach (var expectedJournalNo in expectedJournalNos)
+        {
+            result.Should().Contain(expectedJournalNo);
+        }
 
         _mockSqlDataAccess.Verify(x => x.LoadDataQuery<string, dynamic>(
             It.IsAny<string>(),
@@ -198,26 +218,32 @@ public class TransactionRepositoryTests
                 p.GetType().GetProperty("enteredBy")!.GetValue(p)!.Equals(enteredBy))), Times.Once);
     }
 
-    [Fact]
-    public async Task JournalnosBYJournalno_WithValidJournalNo_ShouldReturnJournalNumbers()
+    [Theory]
+    [InlineData(12345, "TestUser1", new[] { "12345" })]
+    [InlineData(12346, "TestUser2", new[] { "12346", "12347" })]
+    [InlineData(99999, "TestUser3", new string[0])]
+    public async Task JournalnosBYJournalno_WithVariousJournalNumbers_ShouldReturnExpectedJournalNumbers(
+        int journalno, string enteredBy, string[] expectedJournalNos)
     {
         // Arrange
-        var journalno = 12345;
-        var enteredBy = "TestUser";
-        var expectedJournalNos = new List<string> { "12345" };
+        var expectedJournalNosList = expectedJournalNos.ToList();
 
         _mockSqlDataAccess.Setup(x => x.LoadDataQuery<string, dynamic>(
             It.IsAny<string>(),
             It.IsAny<object>()))
-            .ReturnsAsync(expectedJournalNos);
+            .ReturnsAsync(expectedJournalNosList);
 
         // Act
         var result = await _transactionRepository.JournalnosBYJournalno(journalno, enteredBy);
 
         // Assert
         result.Should().NotBeNull();
-        result.Should().HaveCount(1);
-        result.Should().Contain("12345");
+        result.Should().HaveCount(expectedJournalNos.Length);
+        
+        foreach (var expectedJournalNo in expectedJournalNos)
+        {
+            result.Should().Contain(expectedJournalNo);
+        }
 
         _mockSqlDataAccess.Verify(x => x.LoadDataQuery<string, dynamic>(
             It.IsAny<string>(),
@@ -226,34 +252,31 @@ public class TransactionRepositoryTests
                 p.GetType().GetProperty("enteredBy")!.GetValue(p)!.Equals(enteredBy))), Times.Once);
     }
 
-    [Fact]
-    public async Task ReverseTransaction_WithValidRequest_ShouldReturnReversalStatus()
+    [Theory]
+    [InlineData("TXN001", 12345, "TestUser1", "REV001", 54321, 98765, "Reversal Successful")]
+    [InlineData("TXN002", 12346, "TestUser2", "REV002", 54322, 98766, "Reversal Completed")]
+    [InlineData("TXN003", 0, "TestUser3", "REV003", 0, 0, "Reversal Failed")]
+    public async Task ReverseTransaction_WithVariousRequests_ShouldReturnExpectedReversalStatus(
+        string bvrcno, int journalNo, string enteredBy, string newBvrcno, 
+        int expectedJournalNo, int expectedTransNoA, string expectedMessage)
     {
         // Arrange
         var reversalRequest = new ReverseTansactionDTO
         {
-            BVRCNO = "TXN001",
-            JournalNo = 12345,
-            enteredBY = "TestUser",
+            BVRCNO = bvrcno,
+            JournalNo = journalNo,
+            enteredBY = enteredBy,
             Description = "Reversal Test",
-            Newbvrcno = "REV001"
-        };
-
-        var expectedResult = new ReversalStatusDTO
-        {
-            BVRCNO = "REV001",
-            Journalno = 54321,
-            TransNoA = 98765,
-            Message = "Reversal Successful"
+            Newbvrcno = newBvrcno
         };
 
         _mockSqlDataAccess.Setup(x => x.SaveData("sp_TransactionReversal", It.IsAny<DynamicParameters>()))
             .Callback<string, DynamicParameters>((proc, param) =>
             {
                 // Simulate the output parameters being set
-                param.Add("@newJournalno", 54321, DbType.Int32, ParameterDirection.Output);
-                param.Add("@newTransno", 98765, DbType.Int32, ParameterDirection.Output);
-                param.Add("@Message", "Reversal Successful", DbType.String, size: 100, ParameterDirection.Output);
+                param.Add("@newJournalno", expectedJournalNo, DbType.Int32, ParameterDirection.Output);
+                param.Add("@newTransno", expectedTransNoA, DbType.Int32, ParameterDirection.Output);
+                param.Add("@Message", expectedMessage, DbType.String, size: 100, ParameterDirection.Output);
             })
             .Returns(Task.CompletedTask);
 
@@ -262,45 +285,42 @@ public class TransactionRepositoryTests
 
         // Assert
         result.Should().NotBeNull();
-        result.BVRCNO.Should().Be("REV001");
-        result.Journalno.Should().Be(54321);
-        result.TransNoA.Should().Be(98765);
-        result.Message.Should().Be("Reversal Successful");
+        result.BVRCNO.Should().Be(newBvrcno);
+        result.Journalno.Should().Be(expectedJournalNo);
+        result.TransNoA.Should().Be(expectedTransNoA);
+        result.Message.Should().Be(expectedMessage);
 
         _mockSqlDataAccess.Verify(x => x.SaveData("sp_TransactionReversal", It.IsAny<DynamicParameters>()), Times.Once);
     }
 
-    [Fact]
-    public async Task TransactionByProc_WithValidRequest_ShouldReturnTransactionStatus()
+    [Theory]
+    [InlineData("123456", "654321", "TXN001", 1000, 12345, 67890, "Transaction Successful")]
+    [InlineData("111111", "222222", "TXN002", 500, 12346, 67891, "Transaction Completed")]
+    [InlineData("333333", "444444", "TXN003", 2000, 0, 0, "Transaction Failed")]
+    public async Task TransactionByProc_WithVariousRequests_ShouldReturnExpectedTransactionStatus(
+        string srcAccount, string destAccount, string transCode, decimal amount,
+        int expectedJournalNo, int expectedTransNoA, string expectedMessage)
     {
         // Arrange
         var transactionRequest = new TransactionProcDTO
         {
-            SrcAccount = "123456",
-            DestAccount = "654321",
+            SrcAccount = srcAccount,
+            DestAccount = destAccount,
             Description1 = "Test Transfer",
             Description2 = "Mobile Banking",
-            TransCode = "TXN001",
+            TransCode = transCode,
             TransDate = DateTime.Now,
             EnteredBy = "TestUser",
-            Amount = 1000m
-        };
-
-        var expectedResult = new TransactionProcStatusDTO
-        {
-            BVRCNO = "TXN001",
-            Journalno = 12345,
-            TransNoA = 67890,
-            Message = "Transaction Successful"
+            Amount = amount
         };
 
         _mockSqlDataAccess.Setup(x => x.SaveData("sp_MobileTransaction", It.IsAny<DynamicParameters>()))
             .Callback<string, DynamicParameters>((proc, param) =>
             {
                 // Simulate the output parameters being set
-                param.Add("@Journalno", 12345, DbType.Int32, ParameterDirection.Output);
-                param.Add("@Transno", 67890, DbType.Int32, ParameterDirection.Output);
-                param.Add("@Message", "Transaction Successful", DbType.String, size: 100, ParameterDirection.Output);
+                param.Add("@Journalno", expectedJournalNo, DbType.Int32, ParameterDirection.Output);
+                param.Add("@Transno", expectedTransNoA, DbType.Int32, ParameterDirection.Output);
+                param.Add("@Message", expectedMessage, DbType.String, size: 100, ParameterDirection.Output);
             })
             .Returns(Task.CompletedTask);
 
@@ -309,10 +329,10 @@ public class TransactionRepositoryTests
 
         // Assert
         result.Should().NotBeNull();
-        result.BVRCNO.Should().Be("TXN001");
-        result.Journalno.Should().Be(12345);
-        result.TransNoA.Should().Be(67890);
-        result.Message.Should().Be("Transaction Successful");
+        result.BVRCNO.Should().Be(transCode);
+        result.Journalno.Should().Be(expectedJournalNo);
+        result.TransNoA.Should().Be(expectedTransNoA);
+        result.Message.Should().Be(expectedMessage);
 
         _mockSqlDataAccess.Verify(x => x.SaveData("sp_MobileTransaction", It.IsAny<DynamicParameters>()), Times.Once);
     }
@@ -342,82 +362,5 @@ public class TransactionRepositoryTests
 
         // Assert
         result.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task GetTransNoAsync_WithFailure_ShouldReturnZero()
-    {
-        // Arrange
-        var transactionData = new TransactionDTO
-        {
-            TransDate = DateTime.Now,
-            TrDesc = "Test Transaction",
-            TTID = "TXN001",
-            EnteredBy = "TestUser"
-        };
-
-        _mockSqlDataAccess.Setup(x => x.SaveDataScalarTransaction<dynamic>(It.IsAny<string>(), transactionData))
-            .ReturnsAsync(0);
-
-        // Act
-        var result = await _transactionRepository.GetTransNoAsync(transactionData);
-
-        // Assert
-        result.Should().Be(0);
-    }
-
-    [Fact]
-    public async Task JournalnosByBVRCNO_WithNoResults_ShouldReturnEmptyList()
-    {
-        // Arrange
-        var bvrcno = "NONEXISTENT";
-        var enteredBy = "TestUser";
-        var emptyList = new List<string>();
-
-        _mockSqlDataAccess.Setup(x => x.LoadDataQuery<string, dynamic>(
-            It.IsAny<string>(),
-            It.IsAny<object>()))
-            .ReturnsAsync(emptyList);
-
-        // Act
-        var result = await _transactionRepository.JournalnosByBVRCNO(bvrcno, enteredBy);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Should().BeEmpty();
-    }
-
-    [Fact]
-    public async Task TransactionByProc_WithFailure_ShouldReturnFailureStatus()
-    {
-        // Arrange
-        var transactionRequest = new TransactionProcDTO
-        {
-            SrcAccount = "123456",
-            DestAccount = "654321",
-            Description1 = "Test Transfer",
-            TransCode = "TXN001",
-            EnteredBy = "TestUser",
-            Amount = 1000m
-        };
-
-        _mockSqlDataAccess.Setup(x => x.SaveData("sp_MobileTransaction", It.IsAny<DynamicParameters>()))
-            .Callback<string, DynamicParameters>((proc, param) =>
-            {
-                // Simulate failure
-                param.Add("@Journalno", 0, DbType.Int32, ParameterDirection.Output);
-                param.Add("@Transno", 0, DbType.Int32, ParameterDirection.Output);
-                param.Add("@Message", "Transaction Failed", DbType.String, size: 100, ParameterDirection.Output);
-            })
-            .Returns(Task.CompletedTask);
-
-        // Act
-        var result = await _transactionRepository.TransactionByProc(transactionRequest);
-
-        // Assert
-        result.Should().NotBeNull();
-        result.Journalno.Should().Be(0);
-        result.TransNoA.Should().Be(0);
-        result.Message.Should().Be("Transaction Failed");
     }
 }
