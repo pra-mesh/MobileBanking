@@ -29,17 +29,17 @@ public static class ISMartRequestMapping
     public static FundTransferModel ToFundTransferModel(FundTransferRequest req) =>
         new FundTransferModel
         {
-            srcBranchId = req.srcBranchId,
-            srcAccount = req.srcAccount,
-            srcAccountType = req.srcAccountType,
-            destBranchId = req.destBranchId,
-            destAccount = req.destAccount,
-            destAccountType = req.destAccountType,
+            srcBranchId = req.sourceBranchCode,
+            srcAccount = req.sourceAccountNumber,
+            srcAccountType = req.sourceAccountType,
+            destBranchId = req.destinationBranchCode,
+            destAccount = req.destinationAccountNumber,
+            destAccountType = req.destinationAccountType,
             description1 = req.description1,
             description2 = req.description2,
             description3 = req.description3,
-            transCode = req.tranCode,
-            transDate = req.tranDate,
+            transCode = req.transactionIdentifier,
+            transDate = req.transactionDate,
             amount = req.amount,
             enteredBy = "ISmart"
         };

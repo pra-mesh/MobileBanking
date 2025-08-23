@@ -3,14 +3,14 @@
 namespace MobileBanking.Models.Request.ISmart;
 public class FundTransferRequest
 {
-    public string? srcBranchId { get; init; }
+    public string? sourceBranchCode { get; init; }
     [Required]
-    public string srcAccount { get; init; } = "";
-    public string? srcAccountType { get; init; }
-    public string? destBranchId { get; init; }
+    public string sourceAccountNumber { get; init; } = "";
+    public string? sourceAccountType { get; init; }
+    public string? destinationBranchCode { get; init; }
     [Required]
-    public string destAccount { get; init; } = "";
-    public string? destAccountType { get; init; }
+    public string destinationAccountNumber { get; init; } = "";
+    public string? destinationAccountType { get; init; }
     [Required]
     [MaxLength(100)]
     public string description1 { get; init; } = "";
@@ -19,9 +19,9 @@ public class FundTransferRequest
     [MaxLength(100)]
     public string? description3 { get; init; }
     [Required]
-    public string? tranCode { get; init; }
+    public string? transactionIdentifier { get; init; }
     [Required]
-    public DateTime tranDate { get; init; }
+    public DateTime transactionDate { get; init; }
     [Required]
     public decimal amount { get; init; } = 0;
 }

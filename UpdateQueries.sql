@@ -1,4 +1,4 @@
-create or ALTER PROCEDURE [dbo].[SP_MBFullStatment] 
+﻿create or ALTER PROCEDURE [dbo].[SP_MBFullStatment] 
 	(
     @Accountno VARCHAR(20) ,
     @FromDate date,
@@ -278,9 +278,9 @@ Begin
             ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
             ,[EnteredBy],[EntryDate]) 
             values (@curJno,@transCode,@transDate,@srcBranchId,@srcMano,@srcAcno,@srcItemcode,@srcItemName,'','Mobile Banking',@description2,'DR'
-            ,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+            ,@amount,0,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE()),
 			  (@curJno,@transCode,@transDate,@destBranchId,@destMano,@destAcno,@destItemcode,@destItemName,'','Mobile Banking',@description2,'CR'
-			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE())
 End
 else
 Begin
@@ -293,9 +293,9 @@ insert into maintransbook ([Journalno],[BVRCNO],[transDate],[branchid],[mano],[a
             ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
             ,[EnteredBy],[EntryDate]) 
             values (@curJno,@transCode,@transDate,@srcBranchId,@srcMano,@srcAcno,@srcItemcode,@srcItemName,'','Mobile Banking',@description2,'DR'
-            ,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+            ,@amount,0,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE()),
 			  (@curJno,@transCode,@transDate,@srcBranchId,@ibtmano,@ibtAcno,@headItemcode,@headItemName,'','Mobile Banking','IBT '+@description2,'CR'
-			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE())
 
 exec [dbo].[sp_GetJournalno] 
 				@tdate =@transdate,
@@ -309,9 +309,9 @@ if(@curJno = 0)
             ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
             ,[EnteredBy],[EntryDate]) 
             values  (@curJno,@transCode,@transDate,@destBranchId,@ibtmano,@ibtAcno,@headItemcode,@headItemName,'','Mobile Banking','IBT '+@description2,'DR'
-			,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+			,@amount,0,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE()),
 			   (@curJno,@transCode,@transDate,@destBranchId,@destMano,@destAcno,@destItemcode,@destItemName,'','Mobile Banking','IBT '+@description2,'CR'
-			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE())
 exec [dbo].[sp_GetJournalno] 
 				@tdate =@transdate,
 				@description = @description1,
@@ -324,9 +324,9 @@ if(@curJno = 0)
             ,[receivedpaidBy],[particulars],[dr_cr],[Debit],[Credit],[description],[Remarks1],[Remarks2],[Remarks3],[Remarks4],[TransNoa]
             ,[EnteredBy],[EntryDate]) 
             values  (@curJno,@transCode,@transDate,'00',@ibtmano,@ibtAcno,@srcBranchId,@srcBranchItemName,'','Mobile Banking','IBT '+@description2,'DR'
-			,@amount,0,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE()),
+			,@amount,0,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE()),
 			  (@curJno,@transCode,@transDate,'00',@ibtmano,@ibtAcno,@destBranchId,@destBranchItemName,'','Mobile Banking','IBT '+@description2,'CR'
-			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'',@transno,@EnteredBy,GETDATE())	
+			,0,@amount,@description1,@description2,'Mobile Banking',@description3,'Mobile Banking',@transno,@EnteredBy,GETDATE())	
 
 end
 
@@ -421,5 +421,235 @@ begin
 	offset @offset  rows fetch next @limit rows only
 end
 
+go
+CREATE or alter function [dbo].[DepositBalance](@accountno nvarchar(30))
+returns numeric (18,2) 
+begin 
+ declare @balance numeric(18,2)
+ set @balance = (select balq.balance-balq.minBal-balq.gamt-balq.lamt from 
+  (select Depositmaster.mainbookno,depositmaster.accountno as acno1, 
+  Left(depositmaster.mainbookno,2)+right(Depositmaster.mainbookno,2) + depositmaster.accountno as accountno,MemberDetail.Branchid, 
+  case when isnull(depositmaster.MinimumBalance,0)=0 then isNull(savings.MinBal,0) else isnull(depositmaster.MinimumBalance,0) end as minBal, 
+  isnull(mt.balance,0) as balance, 
+  isnull(gt.guarantedamt,0) as gamt, 
+  isnull(depositmaster.LockedAmount,0) as lamt from DepositMaster 
+  left outer join MemberDetail on depositmaster.MemberNo = memberdetail.MemberNo 
+  left outer join savings on depositmaster.MainBookNo = savings.AccountNo
+  left outer join (select maintransbook.acno, maintransbook.itemcode,SUM(credit)- SUM(debit)as balance from MainTransBook
+  Group by acno, itemcode having left(acno,3) + right(acno,2) + Itemcode =@accountno) as mt
+  on depositmaster.MainBookNo = mt.acno and depositmaster.accountno = mt.itemcode
+  left outer join (select Guarantee.acno, Guarantee.itemno,isnull(SUM(lockedAmount),0)as GuarantedAmt from Guarantee group by Acno, itemno 
+  having left(guarantee.acno,3) + right(guarantee.acno,2) + guarantee.itemno =@accountno) as gt
+  on depositmaster.MainBookNo = gt.acno and depositmaster.accountno = gt.itemno
+  where left(depositmaster.mainbookno,3) + right(Depositmaster.mainbookno,2) + depositmaster.accountno =@accountno 
+  and isnull(depositmaster.Disabled,0) =0 ) balq )
+return @balance
+end 
+
+go
+
+CREATE  or alter procedure [dbo].[balancewithfullacno](@accountno nvarchar(30))
+as 
+begin
+  select depositmaster.DepositType as SavingName, Depositmaster.mainbookno,depositmaster.accountno as acno1, DepositMaster.Operator1 as AccountHolder,
+  Left(depositmaster.mainbookno,3)+right(Depositmaster.mainbookno,2) + depositmaster.accountno as accountno,
+  memberdetail.MemName,
+  case when isNUll(DepositMaster.InterestRate,0)=0 then isnull(savings.RateOfInterest,0) else DepositMaster.InterestRate end as interestrate, 
+  Case when isnull(depositmaster.MinimumBalance,0)<>0 then isnull(depositmaster.MinimumBalance,0)else savings.MinBal end as minBal, 
+  isnull(depositmaster.Disabled,0) as Disabled, 
+  isnull(mt.balance,0) as balance, isnull(gt.guarantedamt,0) as gamt, isnull(depositmaster.LockedAmount,0) as lamt from DepositMaster 
+  left outer join MemberDetail on depositmaster.MemberNo = memberdetail.MemberNo 
+  left outer join savings on depositmaster.MainBookNo = savings.AccountNo
+  left outer join (select maintransbook.acno, maintransbook.itemcode,SUM(credit)- SUM(debit)as balance from MainTransBook  Group by acno, 
+  itemcode having left(acno,3) + right(acno,2) + Itemcode =@accountno) as mt
+  on depositmaster.MainBookNo = mt.acno and depositmaster.accountno = mt.itemcode
+  left outer join (select Guarantee.acno, Guarantee.itemno,isnull(SUM(lockedAmount),0)as GuarantedAmt from Guarantee group by Acno, itemno 
+  having left(guarantee.acno,3) + right(guarantee.acno,2) + guarantee.itemno =@accountno) as gt
+  on depositmaster.MainBookNo = gt.acno and depositmaster.accountno = gt.itemno
+  where left(depositmaster.mainbookno,3) + right(Depositmaster.mainbookno,2) + depositmaster.accountno =@accountno
+ end
+
+GO
+
+if not exists (select * from Official where Item='GenerateJournalNo')
+Begin
+insert into Official  values ('GenerateJournalNo','1', '') 
+end
+
+GO
+
+--#region check balance side of mainaccount
+delete from MainAccount
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'1', N'SHARES', N'010', N'LIABILITY', N'All share balance', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'z]o/', N'SHARE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'शेयर', N'शेयर पूंजी हिसाब खाता', N'१')
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'2', N'RESERVES', N'020', N'LIABILITY', N'All reserves balance', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'hu]*f sf]if', N'RESERVE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'कोष', N' जगेडा तथा अन्य कोष हिसाब खाता', N'२')
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'3', N'DEPOSITS', N'030', N'LIABILITY', N'Various types of savings', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'lgIf]k', N'DEPOSIT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'बचत', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'4', N'CREDITORS', N'040', N'LIABILITY', N'Varios types of Creditors we have to pay them', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'afx\o C)f', N'OUT LOAN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'बाह्य ऋण', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'5', N'SUBSIDIES', N'050', N'LIABILITY', N'Various type of donations received', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'cg''bfg', N'SUBSIDIES', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'अनुदान', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'6', N'PAYABLES', N'060', N'LIABILITY', N'Outstanding payables', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'e''QmfgL lbg''kg]{', N'PAYABLES', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'भुक्तानी दिनुपर्ने ', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'7', N'OTHER LIABILITIES', N'070', N'LIABILITY', N'Other types of liabilities wich is not mentioned above', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'cGo bfloTj', N'O.LIABILITIES', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'अन्य दायित्व', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'8', N'CASH', N'080', N'ASSET', N'Various cash receipts', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'gub', N'CASH', N'CASH', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'नगद', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'9', N'BANKS', N'090', N'ASSET', N'Bank accounts of the cooperatives', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'a}+s', N'BANK', N'CASH', NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'बैंक', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'10', N'INVESTMENTS', N'100', N'ASSET', N'General Investments', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'nufgL', N'INVSTMNT', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'लगानी', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'11', N'LOANS', N'110', N'ASSET', N'Loan distributed to the members', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'C)f', N'LOAN', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'ऋण', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'12', N'RECEIVABLES', N'120', N'ASSET', N'Various outstanding receivables', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'kfpg''kg]{', N'RECVBLE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'पाउनु पर्ने', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'13', N'FIXED ASSETS', N'130', N'ASSET', N'various types of physical assets', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N':yL/ ;DklQ', N'FIXED ASTS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'स्थायी सम्पत्ति', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'14', N'OTHER ASSETS', N'140', N'ASSET', N'Other Assets which are not mentioned', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'cGo ;DklQ', N'OTHER ASTS', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'अन्य सम्पत्ति', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'15', N'EXPENDITURES', N'150', N'EXPENDITURE', N'Various types of expenditures', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'vr{', N'EXPENDITURE', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'खर्च', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'16', N'INCOMES', N'160', N'INCOME', N'income entries', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'cfDbfgL', N'INCOMES', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'आम्दानी', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'17', N'PREBALS', N'170', N'PREBAL', N'Previous Balance Maintain', CAST(N'2003-01-15T00:00:00' AS SmallDateTime), N'k''/fgf] Aofn]G;', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'अ. ल्या.', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'18', N'LIABILITY SUSP', N'180', N'SUSPENSE', N'Suspense account for interest receivable is created.', CAST(N'2003-06-26T00:00:00' AS SmallDateTime), N'ph|ftL bfloTj', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'संकास्पद दायित्व', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'19', N'ASSETS SUSP', N'190', N'SUSPENSE', N'Suspense account for interest receivable is created. 
+', CAST(N'2003-06-26T00:00:00' AS SmallDateTime), N'ph|ftL ;DklQ', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'संकास्पद सम्पत्ति', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'20', N'EXPENDITURE SUSP', N'200', N'SUSPENSE', N'CAPITALIZED INTEREST', CAST(N'2004-03-25T00:00:00' AS SmallDateTime), N'ph|ftL vr{', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'संकास्पद खर्च', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'21', N'INCOME SUSP', N'210', N'SUSPENSE', N'BALANCE TRANSFER SUSPENSE', CAST(N'2004-03-25T00:00:00' AS SmallDateTime), N'ph|ftL cfDbfgL', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'संकास्पद आम्दानी', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'22', N'BALANCE SUSP', N'220', N'SUSPENSE', N'BALANCE TRANSFER SUSPENSE', CAST(N'2004-03-25T00:00:00' AS SmallDateTime), N'ph|ftL af+sL', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'संकास्पद अ. ल्या.', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'23', N'INTEROFFICE PAYABLE', N'230', N'INTEROFFICE TRANSCR', N'IOT PAYABLE', CAST(N'2004-03-25T00:00:00' AS SmallDateTime), N'cGt/sfof{no e''QfgL lbg''kg]{', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'अन्तरशाखा कारोबार दायित्व', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'24', N'INTEROFFICE RECEIVABLE', N'240', N'INTEROFFICE TRANSDR', N'IOT RECEIVABLE', CAST(N'2004-03-25T00:00:00' AS SmallDateTime), N'cGt/sfof{no kfpg'' kg]{', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, 1, N'अन्तरशाखा कारोबार सम्पत्ती', NULL, NULL)
+GO
+INSERT [dbo].[MainAccount] ([MAID], [MANAME], [ACNO], [SANAME], [MADESC], [FormedDate], [ManameNepali], [ManameShort], [ACTYPE], [ManameShortNep], [SuperAccount], [EffectOn], [EntrySide], [GroupTitle], [AccountType], [Typeno], [BalanceSide], [UnManame], [CopomisManame], [CoopmisAnex]) VALUES (N'25', N'PROFIT AND  LOSS', N'250', N'PROFIT AND LOSS', N'PROFIT OR LOSS', CAST(N'2004-03-25T00:00:00' AS SmallDateTime), N'gfkmf gf]S;fg vftf ', NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, NULL, -1, N'नाफा नोक्सान हिसाब', NULL, NULL)
+GO
 
 
+--- check date alert
+
+
+create or ALTER trigger [dbo].[checkDateInUpDel] on [dbo].[MainTransBook] 
+for  INSERT, UPDATE, DELETE 
+AS
+declare @muser nvarchar(50)
+declare @transdate datetime  
+declare @olddate as datetime 
+declare @enteredBy nvarchar(50)
+declare @isAdmin bit
+declare @checkLimit bit
+declare @transLimit decimal(18,4)
+declare @itemName  as nvarchar(50)
+declare @isCollTrans nvarchar(50)
+declare @tdate datetime
+declare @tOpen bit
+declare @approvedby nvarchar(100)
+declare @transactionAmount decimal(18,4)
+declare @transNOA int
+select  @olddate = max (transdate) from deleted 
+select  @transdate= max (transdate) from inserted 
+select  @isCollTrans =max(Remarks4) from inserted
+select  @transactionAmount =max(debit) from inserted
+select  @TransnoA = max(transnoa) from inserted
+select @muser = max(Enteredby) from inserted
+select @itemName =  max(itemname) from deleted
+select @tdate= case max(isnull(itemdata,0)) when 1 then (select max(CONVERT(char(12), Transactiondate, 9)) from coopadmin.dbo. transdate)  
+else CONVERT(char(12), GETDATE(), 9)  end  from coopadmin.dbo.off2 where item='DayEndSystem' 
+select @checkLimit = case (isnull(itemdata,0)) when '1' then 1 else 0 end from Coopadmin.dbo.off2 where item='CheckLimit'
+Select @transLimit  = isnull(transactionLimit,0) from coopadmin.dbo.coopusers where username = @muser
+select @isAdmin= [Administrator] from coopadmin.dbo.coopusers where username=@muser
+select @olddate= isnull(@olddate,@tdate)
+select @transdate=isnull(@transdate,@tdate)
+select @approvedby = ISNULL(Approvedby, '') from deleted 
+--select transdate,current from TransactionDates  
+if (@oldDate in (select TransDate from transactiondates where transdate = @olddate  and currentState='Active') and  
+	@TransDate  in (select TransDate from transactiondates where transdate =@transdate  and currentState='Active'))
+begin 
+	set @tOpen = 1 
+end 
+else 
+begin
+	set @topen = 0 
+end 
+if(@muser in ('mofin','moblie','ismart','mbank'))
+begin
+set @tOpen=1
+end
+IF len(@approvedby)>0 
+BEGIN 
+	RAISERROR('You can not edit/delete this transaction...',16,1)
+	rollback transaction 
+end 
+--if not @isAdmin =1 
+--begin 
+if (not @tOpen=1) -- (@transdate= @tdate) and (@olddate=@tdate))     
+   begin 
+	   RAISERROR ('DB Error: Could not commit, Transaction date is not active or not opened!',
+	      16, 1)
+	   ROLLBACK TRANSACTION
+   end 
+--end
+go
+alter table maintransbook 
+alter column BVRCNO nvarchar(150)
+alter table maintransbook
+alter column Remarks1 nvarchar(255)
+alter table maintransbook
+alter column Particulars nvarchar(255)
+alter table maintransbook
+alter column Remarks2 nvarchar(255)
+alter table maintransbook
+alter column Remarks3 nvarchar(255)
+alter table maintransbook
+alter column TransactionType nvarchar(255)
+alter table transone
+alter column TransactionType nvarchar(255)
+
+go
+
+
+INSERT INTO [dbo].[ACCOUNTS]
+           ([ACNAME]
+           ,[ACNO]
+           ,[MANAME]
+           ,[MANO]
+           ,[SANAME]
+           ,[DESCRIPTION]
+           ,[FORMEDDATE])
+		   values
+		    ('ISMART BANKING ACCOUNT', '120.40', 'RECEIVABLES','120','ASSET','MOBILE BANKING',GETDATE()),
+		   ('ISMART PARKING POOLING', '060.40', 'PAYABLES','060','LIABILITY','MOBILE BANKING',GETDATE()),
+		   ('ISMART MOBILE BANKING', '160.40', 'INCOMES','160','INCOME','MOBILE BANKING',GETDATE())
+
+		   INSERT INTO [dbo].[ItemMaster]
+           ([ItemCode]
+           ,[ItemName]
+           ,[NepaliName]
+           ,[ItemLocation]
+           ,[Saname]
+           ,[Maname]
+           ,[Acname]
+           ,[ACNO]
+           ,[MANO]
+           ,[Description]    
+           ,[formedDate]
+           ,[TransDate]
+           ,[User]
+		   ,[BranchID])
+		   Values
+		   ('I001','ISMART UTILITY POOL/PARKING','','','LIABILITY','PAYABLES','ISMART PARKING POOLING','060.40','060','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+		   ('I002','BANK TRANSFER POOL/PARKING','','','LIABILITY','PAYABLES','ISMART PARKING POOLING','060.40','060','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+		   ('I003','CELLPAY PARKING','','','LIABILITY','PAYABLES','ISMART PARKING POOLING','060.40','060','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+		   ('I004','NLOAD PARKING','','','LIABILITY','PAYABLES','ISMART PARKING POOLING','060.40','060','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+		   ('I001','ISMART UTILITY OPERATOR','','','ASSET','RECEIVABLES','ISMART BANKING ACCOUNT','120.40','120','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+		   ('I002','NLOAD FROM BANK','','','ASSET','RECEIVABLES','ISMART BANKING ACCOUNT','120.40','120','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+			('I003','CELLPAY  OPERATOR','','','ASSET','RECEIVABLES','ISMART BANKING ACCOUNT','120.40','120','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+			('MI001','MOBILE BANKING REGISTRATION','','','INCOME','INCOMES','ISMART MOBILE BANKING','160.40','160','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01'),
+			('MI002','MOBILE BANKING CHARGES','','','INCOME','INCOMES','ISMART MOBILE BANKING','160.40','160','MOBILE BANKING', GETDATE(),GETDATE(),'Oxpan','01')

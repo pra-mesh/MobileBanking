@@ -29,7 +29,7 @@ public class StatementServices : IStatementServices
         {
             minimumBalance = accountbal.MinBal,
             availableBalance = accountbal.Balance,
-            statementList = miniStatements
+            statementList = [.. miniStatements.AsEnumerable().Reverse()],
         };
     }
     public async Task<List<MiniStatement>> MiniStatement(MiniStatementInquiryModel req)

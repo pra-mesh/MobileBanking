@@ -1,3 +1,4 @@
+using Dapper;
 using MobileBanking.Application;
 using MobileBanking.Exceptions;
 using MobileBanking.Logger.Services;
@@ -19,7 +20,7 @@ builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 builder.Services.AddHttpContextAccessor();
 builder.Services.AddApplicationServices();
-
+SqlMapper.Settings.CommandTimeout = 120;
 builder.Services.AddScoped<ApiKeyAuthFilter>();
 
 builder.Services.AddSingleton<ILoggerService, LoggerService>();

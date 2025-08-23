@@ -18,7 +18,7 @@ public static class ISmartResponseMapping
     private static FullStatementList GetSatemenlist(Statement statement) =>
     new FullStatementList
     {
-        date = statement.date.Date.ToString(),
+        date = statement.date.ToShortDateString(),
         remarks = statement.remarks,
         amount = statement.amount,
         type = statement.type,
@@ -36,7 +36,7 @@ public static class ISmartResponseMapping
     private static MiniStatementList GetMiniStatement(MiniStatement statement) =>
     new MiniStatementList
     {
-        date = statement.date.Date.ToString(),
+        date = statement.date.ToShortDateString(),
         remarks = statement.remarks,
         amount = statement.amount,
         type = statement.type,
